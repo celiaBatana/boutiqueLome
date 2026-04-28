@@ -3,6 +3,54 @@ import { useProduits, useDepenses } from '../hooks/useFirebase'
 import { SCard, Spinner, Empty, ProgBar, Field } from '../components/UI'
 import { fmt, today, CAT_PRODUITS } from '../lib/utils'
 
+// ── Cellule éditable inline ──
+function EditableCell({ value, color, isCurrency = false, onSave }) {
+  const [editing, setEditing] = useState(false)
+  const [val, setVal] = useState(value)
+
+  const commit = () => {
+    setEditing(false)
+    const n = Number(val)
+    if (!isNaN(n) && n !== value) onSave(n)
+  }
+
+  if (editing) {
+    return (
+      <input
+        type="number"
+        value={val}
+        autoFocus
+        onChange={e => setVal(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
+        style={{
+          width: 90, padding: '4px 8px', borderRadius: 7,
+          border: '1.5px solid var(--em)', background: '#fff',
+          fontFamily: 'Lexend,sans-serif', fontSize: 13,
+          color: 'var(--text)', outline: 'none',
+        }}
+      />
+    )
+  }
+
+  return (
+    <span
+      onClick={() => { setVal(value); setEditing(true) }}
+      title="Cliquer pour modifier"
+      style={{
+        cursor: 'pointer',
+        color: color || 'var(--text)',
+        fontWeight: 700,
+        fontSize: 15,
+        borderBottom: '1.5px dashed var(--border)',
+        paddingBottom: 1,
+      }}
+    >
+      {isCurrency ? fmt(value) + ' FCFA' : value}
+    </span>
+  )
+}
+
 function ModalAddProduit({ onClose, onSave }) {
   const [form, setForm] = useState({ nom: '', cat: 'Boissons', stock: 3, seuil: 1, prix: 700 })
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -83,9 +131,9 @@ function ModalReappro({ produits, onClose, onSave }) {
 }
 
 export default function Stocks() {
-  const { produits, loading, addProduit, deleteProduit } = useProduits()
+  const { produits, loading, addProduit, updateProduit, deleteProduit } = useProduits()
   const { addDepense } = useDepenses()
-  const [showAdd, setShowAdd]       = useState(false)
+  const [showAdd, setShowAdd]         = useState(false)
   const [showReappro, setShowReappro] = useState(false)
 
   const handleAddProduit = async (form) => {
@@ -110,6 +158,8 @@ export default function Stocks() {
     setShowReappro(false)
   }
 
+  const handleUpdate = (id, field, value) => updateProduit(id, { [field]: value })
+
   if (loading) return <Spinner />
 
   return (
@@ -122,11 +172,25 @@ export default function Stocks() {
         </div>
       </div>
 
+      <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+        ✏️ Cliquez sur le <span style={{ borderBottom: '1.5px dashed var(--text3)', margin: '0 3px' }}>stock</span>,
+        le <span style={{ borderBottom: '1.5px dashed var(--text3)', margin: '0 3px' }}>seuil</span> ou le
+        <span style={{ borderBottom: '1.5px dashed var(--text3)', margin: '0 3px' }}>prix</span> pour modifier directement
+      </div>
+
       <div className="scard" style={{ padding: 0, overflow: 'hidden' }}>
         <div className="tw">
           <table>
             <thead>
-              <tr><th>Produit</th><th>Catégorie</th><th>Stock</th><th>Alerte ≤</th><th>Prix vente</th><th>État</th><th></th></tr>
+              <tr>
+                <th>Produit</th>
+                <th>Catégorie</th>
+                <th>Stock</th>
+                <th>Seuil alerte</th>
+                <th>Prix vente</th>
+                <th>État</th>
+                <th></th>
+              </tr>
             </thead>
             <tbody>
               {produits.length === 0
@@ -142,16 +206,36 @@ export default function Stocks() {
                     <tr key={p.id}>
                       <td><strong>{p.nom}</strong></td>
                       <td><span className="badge b-light">{p.cat}</span></td>
-                      <td style={{ minWidth: 120 }}>
+
+                      {/* Stock éditable */}
+                      <td style={{ minWidth: 150 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <strong style={{ color: col, fontSize: 15 }}>{p.stock}</strong>
+                          <EditableCell
+                            value={p.stock} color={col}
+                            onSave={v => handleUpdate(p.id, 'stock', v)}
+                          />
                           <div style={{ flex: 1 }}>
-                            <ProgBar value={p.stock} max={p.seuil * 3} color={col} />
+                            <ProgBar value={p.stock} max={Math.max(p.seuil * 3, 1)} color={col} />
                           </div>
                         </div>
                       </td>
-                      <td>{p.seuil}</td>
-                      <td>{fmt(p.prix)} FCFA</td>
+
+                      {/* Seuil éditable */}
+                      <td>
+                        <EditableCell
+                          value={p.seuil} color="var(--text2)"
+                          onSave={v => handleUpdate(p.id, 'seuil', v)}
+                        />
+                      </td>
+
+                      {/* Prix éditable */}
+                      <td>
+                        <EditableCell
+                          value={p.prix} isCurrency
+                          onSave={v => handleUpdate(p.id, 'prix', v)}
+                        />
+                      </td>
+
                       <td>{badge}</td>
                       <td>
                         <button className="btn btn-del btn-xs"
