@@ -4,7 +4,7 @@ import { SCard, Spinner, Empty, ProgBar, Field } from '../components/UI'
 import { fmt, today, CAT_PRODUITS } from '../lib/utils'
 
 function ModalAddProduit({ onClose, onSave }) {
-  const [form, setForm] = useState({ nom: '', cat: 'Boissons', stock: 0, seuil: 5, prix: 0 })
+  const [form, setForm] = useState({ nom: '', cat: 'Boissons', stock: 3, seuil: 1, prix: 700 })
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
   return (
     <div className="overlay open">
