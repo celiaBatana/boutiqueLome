@@ -79,6 +79,30 @@ export function useVentes() {
 
   return { ventes: data, loading, addVente, deleteVente }
 }
+// ── Caisse / Report mensuel ──
+export function useCaisse() {
+  const [reports, setReports] = useState({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, COLLECTIONS.CAISSE), (snap) => {
+      const data = {}
+      snap.docs.forEach(d => { data[d.id] = d.data().report || 0 })
+      setReports(data)
+      setLoading(false)
+    })
+    return () => unsub()
+  }, [])
+
+  const setReport = async (mois, montant) => {
+    const { setDoc } = await import('firebase/firestore')
+    await setDoc(doc(db, COLLECTIONS.CAISSE, mois), { report: Number(montant) || 0 })
+  }
+
+  const getReport = (mois) => reports[mois] || 0
+
+  return { reports, loading, setReport, getReport }
+}
 
 // ── Dépenses ──
 export function useDepenses() {
