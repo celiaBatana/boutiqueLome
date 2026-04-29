@@ -195,70 +195,82 @@ export default function Stocks() {
             <tbody>
               {produits.length === 0
                 ? <tr><td colSpan={7}><Empty icon="📦" text='Aucun produit. Cliquez sur "Nouveau produit"' /></td></tr>
-                : produits.map(p => {
-                  const credit = p.cat === 'Crédit téléphonique'
-                  const col = p.stock === 0 ? 'var(--coral)' : p.stock <= p.seuil ? 'var(--gold)' : 'var(--em)'
-                  const badge = p.stock === 0
-                    ? <span className="badge b-red">Épuisé</span>
-                    : p.stock <= p.seuil
-                      ? <span className="badge b-gold">⚠ Faible</span>
-                      : <span className="badge b-green">✓ OK</span>
-                  return (
-                    <tr key={p.id}>
-                      <td>
-                        <strong>{p.nom}</strong>
-                        {credit && <span style={{ marginLeft: 6 }}>📱</span>}
-                      </td>
-                      <td><span className="badge b-light">{p.cat}</span></td>
+                : (() => {
+                  let lastCat = null
+                  return produits.map(p => {
+                    const credit = p.cat === 'Crédit téléphonique'
+                    const col = p.stock === 0 ? 'var(--coral)' : p.stock <= p.seuil ? 'var(--gold)' : 'var(--em)'
+                    const badge = p.stock === 0
+                      ? <span className="badge b-red">Épuisé</span>
+                      : p.stock <= p.seuil
+                        ? <span className="badge b-gold">⚠ Faible</span>
+                        : <span className="badge b-green">✓ OK</span>
 
-                      {/* Stock / Solde éditable */}
-                      <td style={{ minWidth: 150 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    const catHeader = p.cat !== lastCat ? (
+                      <tr key={'cat-' + p.cat}>
+                        <td colSpan={7} style={{
+                          background: 'linear-gradient(90deg, var(--em-g), transparent)',
+                          padding: '8px 14px',
+                          fontFamily: 'Nunito,sans-serif',
+                          fontWeight: 800,
+                          fontSize: 11,
+                          color: 'var(--em-d)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '.07em',
+                          borderBottom: '1.5px solid var(--border)',
+                        }}>
+                          {p.cat === 'Crédit téléphonique' ? '📱 ' : ''}
+                          {p.cat}
+                        </td>
+                      </tr>
+                    ) : null
+                    lastCat = p.cat
+
+                    return [
+                      catHeader,
+                      <tr key={p.id}>
+                        <td>
+                          <strong>{p.nom}</strong>
+                          {credit && <span style={{ marginLeft: 6 }}>📱</span>}
+                        </td>
+                        <td><span className="badge b-light">{p.cat}</span></td>
+                        <td style={{ minWidth: 150 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <EditableCell
+                              value={p.stock} color={col}
+                              isCurrency={credit}
+                              onSave={v => handleUpdate(p.id, 'stock', v)}
+                            />
+                            <div style={{ flex: 1 }}>
+                              <ProgBar value={p.stock} max={Math.max(p.seuil * 3, 1)} color={col} />
+                            </div>
+                          </div>
+                        </td>
+                        <td>
                           <EditableCell
-                            value={p.stock} color={col}
+                            value={p.seuil} color="var(--text2)"
                             isCurrency={credit}
-                            onSave={v => handleUpdate(p.id, 'stock', v)}
+                            onSave={v => handleUpdate(p.id, 'seuil', v)}
                           />
-                          {!credit && (
-                            <div style={{ flex: 1 }}>
-                              <ProgBar value={p.stock} max={Math.max(p.seuil * 3, 1)} color={col} />
-                            </div>
-                          )}
-                          {credit && (
-                            <div style={{ flex: 1 }}>
-                              <ProgBar value={p.stock} max={Math.max(p.seuil * 3, 1)} color={col} />
-                            </div>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Seuil éditable */}
-                      <td>
-                        <EditableCell
-                          value={p.seuil} color="var(--text2)"
-                          isCurrency={credit}
-                          onSave={v => handleUpdate(p.id, 'seuil', v)}
-                        />
-                      </td>
-
-                      {/* Prix éditable (masqué pour crédit) */}
-                      <td>
-                        {credit
-                          ? <span style={{ color: 'var(--text3)', fontSize: 12 }}>—</span>
-                          : <EditableCell value={p.prix} isCurrency onSave={v => handleUpdate(p.id, 'prix', v)} />
-                        }
-                      </td>
-
-                      <td>{badge}</td>
-                      <td>
-                        <button className="btn btn-del btn-xs"
-                          onClick={() => confirm('Supprimer ce produit ?') && deleteProduit(p.id)}>
-                          ✕
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                })
+                        </td>
+                        <td>
+                          {credit
+                            ? <span style={{ color: 'var(--text3)', fontSize: 12 }}>—</span>
+                            : <EditableCell value={p.prix} isCurrency onSave={v => handleUpdate(p.id, 'prix', v)} />
+                          }
+                        </td>
+                        <td>{badge}</td>
+                        <td>
+                          <button className="btn btn-del btn-xs"
+                            onClick={() => confirm('Supprimer ce produit ?') && deleteProduit(p.id)}>
+                            ✕
+                          </button>
+                        </td>
+                      </tr>
+                    ]
+                  })
+                })()
+              }
               }
             </tbody>
           </table>
