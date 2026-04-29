@@ -92,8 +92,21 @@ export default function Ventes() {
       <SCard title="Nouvelle vente">
         <div className="form-grid">
           <Field label="Date de vente">
-            <input type="date" value={date} onChange={e => setDate(e.target.value)} />
-          </Field>
+            <input
+              type="text"
+              value={date}
+              onChange={e => {
+                let v = e.target.value.replace(/[^0-9-]/g, '')
+                // Auto-complétion : "01" → "2025-04-01", "0104" → "2025-04-01", "04-01" → "2025-04-01"
+                if (/^\d{2}$/.test(v)) v = new Date().getFullYear() + '-' + new Date().toISOString().slice(5,7) + '-' + v
+                if (/^\d{4}$/.test(v)) v = new Date().getFullYear() + '-' + v.slice(0,2) + '-' + v.slice(2,4)
+                if (/^\d{2}-\d{2}$/.test(v)) v = new Date().getFullYear() + '-' + v.slice(3,5) + '-' + v.slice(0,2)
+                setDate(v)
+              }}
+              placeholder="01 → 2025-04-01 · 0401 → 2025-04-01"
+              style={{ fontFamily: 'monospace' }}
+            />
+        </Field>
           <Field label="Produit">
             <input
               list="prod-list"
