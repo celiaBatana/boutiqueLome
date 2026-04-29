@@ -1,23 +1,27 @@
 import { useState } from 'react'
-import { useDepenses, useCaisse } from '../hooks/useFirebase'
+import { useDepenses, useCaisse, useVentes } from '../hooks/useFirebase'
 import { StatCard, SCard, Spinner, Empty, Field } from '../components/UI'
 import { fmt, today, currentMonth, CAT_DEPENSES } from '../lib/utils'
 
 export default function Depenses() {
   const { depenses, loading, addDepense, deleteDepense } = useDepenses()
+  const { ventes } = useVentes()
   const { getReport, setReport } = useCaisse()
 
-  const [desc, setDesc]       = useState('')
-  const [mont, setMont]       = useState('')
-  const [cat, setCat]         = useState('Loyer')
-  const [saving, setSaving]   = useState(false)
+  const [desc, setDesc]             = useState('')
+  const [mont, setMont]             = useState('')
+  const [cat, setCat]               = useState('Loyer')
+  const [saving, setSaving]         = useState(false)
   const [editReport, setEditReport] = useState(false)
   const [reportVal, setReportVal]   = useState('')
 
-  const m   = currentMonth()
-  const md  = depenses.filter(d => (d.date || '').startsWith(m))
-  const total = md.reduce((a, d) => a + (d.montant || 0), 0)
+  const m      = currentMonth()
+  const md     = depenses.filter(d => (d.date || '').startsWith(m))
+  const mv     = ventes.filter(v => (v.date || '').startsWith(m))
+  const total  = md.reduce((a, d) => a + (d.montant || 0), 0)
+  const revenus = mv.reduce((a, v) => a + (v.total || 0), 0)
   const report = getReport(m)
+  const caisse = report + revenus - total
 
   const catMap = {}
   md.forEach(d => { catMap[d.cat] = (catMap[d.cat] || 0) + (d.montant || 0) })
@@ -46,7 +50,7 @@ export default function Depenses() {
         <div className="page-title">Dépenses 💸</div>
       </div>
 
-      {/* ── Report du mois précédent ── */}
+      {/* ── Report + Caisse ── */}
       <div style={{
         background: 'linear-gradient(135deg,#fff8e1,#fffde7)',
         border: '1.5px solid rgba(240,165,0,.3)',
@@ -68,7 +72,7 @@ export default function Depenses() {
                 onChange={e => setReportVal(e.target.value)}
                 placeholder="Montant en FCFA"
                 autoFocus
-                style={{ width: 160, padding: '6px 10px', borderRadius: 8, border: '1.5px solid var(--gold)', fontFamily: 'Lexend,sans-serif', fontSize: 13 }}
+                style={{ width: 160, padding: '6px 10px', borderRadius: 8, border: '1.5px solid #f0a500', fontFamily: 'Lexend,sans-serif', fontSize: 13 }}
               />
               <button className="btn btn-gold btn-sm" onClick={handleSaveReport}>✔ Enregistrer</button>
               <button className="btn btn-outline btn-sm" onClick={() => setEditReport(false)}>Annuler</button>
@@ -88,17 +92,27 @@ export default function Depenses() {
             </div>
           )}
         </div>
-        {report > 0 && (
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 10, color: '#8a5c00', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>
-              Caisse ce mois
-            </div>
-            <div style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 20, color: (report - total) >= 0 ? 'var(--em-d)' : 'var(--coral)' }}>
-              {fmt(report - total)} FCFA
-            </div>
-            <div style={{ fontSize: 10, color: 'var(--text3)' }}>après dépenses</div>
+
+        {/* Détail caisse */}
+        <div style={{ textAlign: 'right', minWidth: 160 }}>
+          <div style={{ fontSize: 10, color: '#8a5c00', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>
+            Caisse ce mois
           </div>
-        )}
+          {/* Détail du calcul */}
+          <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 2 }}>
+            Report : <strong style={{ color: '#8a5c00' }}>{fmt(report)} FCFA</strong>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 2 }}>
+            + Revenus : <strong style={{ color: 'var(--em-d)' }}>{fmt(revenus)} FCFA</strong>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 6 }}>
+            − Dépenses : <strong style={{ color: 'var(--coral)' }}>{fmt(total)} FCFA</strong>
+          </div>
+          <div style={{ height: 1, background: 'rgba(240,165,0,.3)', marginBottom: 6 }} />
+          <div style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 22, color: caisse >= 0 ? 'var(--em-d)' : 'var(--coral)' }}>
+            {fmt(caisse)} FCFA
+          </div>
+        </div>
       </div>
 
       {/* ── Formulaire nouvelle dépense ── */}
@@ -125,8 +139,12 @@ export default function Depenses() {
       <div className="stat-grid">
         <StatCard colorClass="c0" icon="💸" label="Total dépenses ce mois"
           value={fmt(total)} sub={`FCFA · ${md.length} entrée(s)`} />
+        <StatCard colorClass="c1" icon="📈" label="Revenus ce mois"
+          value={fmt(revenus)} sub="FCFA" />
+        <StatCard colorClass={caisse >= 0 ? 'c3' : 'c2'} icon="💼" label="Caisse"
+          value={fmt(caisse)} sub="report + revenus - dépenses" />
         {cats.map(([c, v], i) => (
-          <StatCard key={c} colorClass={COLORS[(i + 1) % COLORS.length]}
+          <StatCard key={c} colorClass={COLORS[(i + 3) % COLORS.length]}
             label={c} value={fmt(v)} sub="FCFA" />
         ))}
       </div>
