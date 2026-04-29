@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react'
-import { useVentes, useDepenses } from '../hooks/useFirebase'
+import { useVentes, useDepenses, useProduits } from '../hooks/useFirebase'
 import { StatCard, SCard, Spinner, Empty } from '../components/UI'
 import { fmt, monthKey, currentMonth, fmtMonth, MEDALS } from '../lib/utils'
 
 export default function Historique() {
-  const { ventes, loading: lV } = useVentes()
+  const { ventes, loading: lV, deleteVente } = useVentes()
   const { depenses, loading: lD } = useDepenses()
+  const { produits } = useProduits()
 
   const months = useMemo(() => {
     const s = new Set([
@@ -33,6 +34,21 @@ export default function Historique() {
     return { mv, md, tvM, tdM, ben: tvM - tdM, top }
   }, [ventes, depenses, mois])
 
+  const handleDelete = async (v) => {
+    if (!confirm(`Supprimer la vente "${v.prodNom}" du ${v.date} ?`)) return
+    // Remettre le stock
+    const { db, COLLECTIONS } = await import('../lib/firebase')
+    const { doc, updateDoc, getDoc } = await import('firebase/firestore')
+    const ref = doc(db, COLLECTIONS.PRODUITS, v.prodId)
+    const snap = await getDoc(ref)
+    if (snap.exists()) {
+      await updateDoc(ref, {
+        stock: (snap.data().stock || 0) + (v.typeCredit ? v.total : v.qty)
+      })
+    }
+    await deleteVente(v.id)
+  }
+
   if (lV || lD) return <Spinner />
 
   return (
@@ -57,21 +73,50 @@ export default function Historique() {
 
       {/* Détail ventes */}
       <div className="scard" style={{ padding: 0, overflow: 'hidden', marginBottom: 18 }}>
-        <div style={{ padding: '16px 20px 0' }}>
+        <div style={{ padding: '16px 20px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div className="scard-title">Détail des ventes</div>
+          <span className="live-dot">Temps réel</span>
         </div>
         <div className="tw">
           <table>
-            <thead><tr><th>Date</th><th>Produit</th><th>Qté</th><th>Total</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Produit</th>
+                <th>Qté / Montant</th>
+                <th>Total</th>
+                <th></th>
+              </tr>
+            </thead>
             <tbody>
               {mv.length === 0
-                ? <tr><td colSpan={4}><Empty icon="📅" text="Aucune vente ce mois" /></td></tr>
+                ? <tr><td colSpan={5}><Empty icon="📅" text="Aucune vente ce mois" /></td></tr>
                 : mv.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(v => (
                   <tr key={v.id}>
-                    <td style={{ color: 'var(--text3)' }}>{v.date}</td>
-                    <td><strong>{v.prodNom}</strong></td>
-                    <td>{v.qty}</td>
-                    <td><span style={{ color: 'var(--em)', fontWeight: 700 }}>{fmt(v.total)} FCFA</span></td>
+                    <td style={{ color: 'var(--text3)', whiteSpace: 'nowrap' }}>
+                      {v.date.slice(8,10)}/{v.date.slice(5,7)}/{v.date.slice(0,4)}
+                    </td>
+                    <td>
+                      <strong>{v.prodNom}</strong>
+                      {v.typeCredit && (
+                        <span className="badge b-sky" style={{ marginLeft: 6 }}>📱 Crédit</span>
+                      )}
+                    </td>
+                    <td>{v.typeCredit ? `${fmt(v.qty)} FCFA` : v.qty}</td>
+                    <td>
+                      <span style={{ color: 'var(--em)', fontWeight: 700 }}>
+                        {fmt(v.total)} FCFA
+                      </span>
+                    </td>
+                    <td>
+                      <button
+                        className="btn btn-del btn-xs"
+                        onClick={() => handleDelete(v)}
+                        title="Supprimer cette vente"
+                      >
+                        ✕
+                      </button>
+                    </td>
                   </tr>
                 ))
               }
