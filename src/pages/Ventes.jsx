@@ -93,29 +93,30 @@ export default function Ventes() {
             <input type="date" value={date} onChange={e => setDate(e.target.value)} />
           </Field>
           <Field label="Produit">
-            <select value={pid} onChange={e => {
-              setPid(e.target.value)
-              const p = produits.find(x => x.id === e.target.value)
-              if (p && !isCredit(p)) setPrix(p.prix)
-              setMontant(''); setQty(1)
-            }}>
-              <option value="">— Choisir —</option>
-              {/* Produits normaux */}
-              <optgroup label="── Produits ──">
-                {produits.filter(p => !isCredit(p)).map(p => (
-                  <option key={p.id} value={p.id}>{p.nom} (stock : {p.stock})</option>
-                ))}
-              </optgroup>
-              {/* Crédits */}
-              {produits.filter(p => isCredit(p)).length > 0 && (
-                <optgroup label="── Crédit téléphonique ──">
-                  {produits.filter(p => isCredit(p)).map(p => (
-                    <option key={p.id} value={p.id}>📱 {p.nom} (solde : {fmt(p.stock)} FCFA)</option>
-                  ))}
-                </optgroup>
-              )}
-            </select>
-          </Field>
+            <input
+              list="prod-list"
+              value={prodSearch}
+              onChange={e => {
+                setProdSearch(e.target.value)
+                const p = produits.find(x => x.nom === e.target.value)
+                if (p) {
+                  setPid(p.id)
+                  if (!isCredit(p)) setPrix(p.prix)
+                  setMontant(''); setQty(1)
+                } else {
+                  setPid('')
+                }
+              }}
+              placeholder="Tapez pour chercher un produit…"
+            />
+            <datalist id="prod-list">
+              {produits.map(p => (
+                <option key={p.id} value={p.nom}>
+                  {isCredit(p) ? `📱 Solde: ${fmt(p.stock)} FCFA` : `Stock: ${p.stock}`}
+                </option>
+              ))}
+            </datalist>
+        </Field>
 
           {creditMode ? (
             // ── Crédit : juste un montant ──
