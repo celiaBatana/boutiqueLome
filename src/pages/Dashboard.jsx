@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useProduits, useVentes, useDepenses } from '../hooks/useFirebase'
 import { StatCard, SCard, Spinner, Empty, ProgBar, BarChart } from '../components/UI'
-import { fmt, today, currentMonth, monthKey } from '../lib/utils'
+import { fmt, today, currentMonth, fmtMonth } from '../lib/utils'
 
 export default function Dashboard({ setPage }) {
   const { produits, loading: lP } = useProduits()
@@ -25,7 +25,20 @@ export default function Dashboard({ setPage }) {
     const top = Object.entries(topMap).sort((a, b) => b[1] - a[1]).slice(0, 6)
       .map(([label, value]) => ({ label, value }))
 
-    return { ts, ms, tvT, tvM, ben: tvM - tdM, low, top }
+    // Ventes par jour du mois
+    const dayMap = {}
+    ms.forEach(v => {
+      const day = (v.date || '').slice(8, 10)
+      if (day) dayMap[day] = (dayMap[day] || 0) + (v.total || 0)
+    })
+    const days = Array.from({ length: 31 }, (_, i) => {
+      const d = String(i + 1).padStart(2, '0')
+      return { day: d, total: dayMap[d] || 0 }
+    }).filter(d => (m + '-' + d.day) <= today())
+    const maxDay = Math.max(...days.map(d => d.total), 1)
+    const top4 = [...days].sort((a, b) => b.total - a.total).slice(0, 4).map(d => d.day)
+
+    return { ts, ms, tvT, tvM, ben: tvM - tdM, low, top, days, top4, maxDay }
   }, [ventes, depenses, produits, t, m])
 
   if (lP || lV || lD) return <Spinner />
@@ -81,7 +94,6 @@ export default function Dashboard({ setPage }) {
         <SCard
           title="🧾 Ventes d'aujourd'hui"
           action={<button className="btn btn-outline btn-sm" onClick={() => setPage('ventes')}>Tout voir →</button>}
-          style={{ gridColumn: '1/-1' }}
           noPad={false}
         >
           <div className="tw">
@@ -93,7 +105,7 @@ export default function Dashboard({ setPage }) {
                   : stats.ts.map(v => (
                     <tr key={v.id}>
                       <td><strong>{v.prodNom}</strong></td>
-                      <td>{v.qty}</td>
+                      <td>{v.typeCredit ? `${fmt(v.qty)} FCFA` : v.qty}</td>
                       <td><span style={{ color: 'var(--em)', fontWeight: 700 }}>{fmt(v.total)} FCFA</span></td>
                     </tr>
                   ))
@@ -119,15 +131,65 @@ export default function Dashboard({ setPage }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <span style={{ fontSize: 13, fontWeight: 600 }}>{p.nom}</span>
                     <span className={p.stock === 0 ? 'badge b-red' : 'badge b-gold'}>
-                      {p.stock} restant{p.stock > 1 ? 's' : ''}
+                      {p.cat === 'Crédit téléphonique' ? fmt(p.stock) + ' FCFA' : p.stock + ' restant' + (p.stock > 1 ? 's' : '')}
                     </span>
                   </div>
-                  <ProgBar value={p.stock} max={p.seuil * 3} color={col} />
+                  <ProgBar value={p.stock} max={Math.max(p.seuil * 3, 1)} color={col} />
                 </div>
               )
             })
           }
         </SCard>
+
+        {/* Heatmap ventes par jour */}
+        <SCard title={`📆 Ventes par jour — ${fmtMonth(m)}`}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {stats.days.map(({ day, total }) => {
+              const isTop = stats.top4.includes(day)
+              const intensity = total ? Math.max(0.15, total / stats.maxDay) : 0
+              const bg = total === 0
+                ? 'var(--bg)'
+                : isTop
+                  ? `rgba(14,165,107,${intensity})`
+                  : `rgba(14,165,107,${intensity * 0.6})`
+              const textColor = isTop && total > 0 ? 'var(--em-d)' : total > 0 ? 'var(--text2)' : 'var(--text3)'
+              return (
+                <div key={day} title={total > 0 ? fmt(total) + ' FCFA' : 'Aucune vente'} style={{
+                  width: 52, borderRadius: 10,
+                  background: bg,
+                  border: isTop ? '2px solid var(--em)' : '1.5px solid var(--border2)',
+                  padding: '8px 4px',
+                  textAlign: 'center',
+                  transition: 'all .2s',
+                  boxShadow: isTop ? '0 4px 12px rgba(14,165,107,.25)' : 'none',
+                  cursor: 'default',
+                }}>
+                  <div style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600, marginBottom: 4 }}>
+                    {day}
+                  </div>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: textColor, fontFamily: 'Nunito,sans-serif', lineHeight: 1.2 }}>
+                    {total > 0 ? fmt(total) : '—'}
+                  </div>
+                  {isTop && total > 0 && (
+                    <div style={{ fontSize: 9, marginTop: 3 }}>🏆</div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          <div style={{ display: 'flex', gap: 16, marginTop: 14, fontSize: 11, color: 'var(--text3)', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span>🏆 Top 4 jours du mois</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ width: 12, height: 12, borderRadius: 3, background: 'rgba(14,165,107,.6)', display: 'inline-block' }}></span>
+              Plus de ventes
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ width: 12, height: 12, borderRadius: 3, background: 'var(--bg)', border: '1px solid var(--border2)', display: 'inline-block' }}></span>
+              Aucune vente
+            </span>
+          </div>
+        </SCard>
+
       </div>
     </div>
   )
