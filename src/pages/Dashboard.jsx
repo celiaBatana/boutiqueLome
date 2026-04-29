@@ -3,7 +3,7 @@ import { useProduits, useVentes, useDepenses, useCaisse } from '../hooks/useFire
 import { StatCard, SCard, Spinner, Empty, ProgBar, BarChart } from '../components/UI'
 import { fmt, today, currentMonth, monthKey, fmtMonth } from '../lib/utils'
 
-// ── Heatmap réutilisable ──
+// ── Heatmap ──
 function Heatmap({ days, top4, maxDay }) {
   return (
     <>
@@ -46,6 +46,75 @@ function Heatmap({ days, top4, maxDay }) {
   )
 }
 
+// ── ReportBlock — DOIT être en dehors de Dashboard pour garder son state ──
+function ReportBlock({ m, getReport, setReport, caisse }) {
+  const [editing, setEditing] = useState(false)
+  const [val, setVal]         = useState('')
+  const rep = getReport(m)
+
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg,#fff8e1,#fffde7)',
+      border: '1.5px solid rgba(240,165,0,.3)',
+      borderRadius: 14, padding: '14px 18px', marginBottom: 20,
+      display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+      boxShadow: '0 4px 16px rgba(240,165,0,.1)',
+    }}>
+      <div style={{ fontSize: 24 }}>💼</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#8a5c00', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>
+          Report du mois précédent
+        </div>
+        {editing ? (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <input
+              type="number" value={val}
+              onChange={e => setVal(e.target.value)}
+              placeholder="Montant en FCFA" autoFocus
+              style={{ width: 150, padding: '6px 10px', borderRadius: 8, border: '1.5px solid #f0a500', fontFamily: 'Lexend,sans-serif', fontSize: 13 }}
+            />
+            <button className="btn btn-gold btn-sm"
+              onClick={async () => { await setReport(m, val); setEditing(false) }}>
+              ✔ Enregistrer
+            </button>
+            <button className="btn btn-outline btn-sm" onClick={() => setEditing(false)}>
+              Annuler
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 20, color: rep > 0 ? '#8a5c00' : 'var(--text3)' }}>
+              {rep > 0 ? fmt(rep) + ' FCFA' : 'Non défini'}
+            </span>
+            <button
+              onClick={() => { setVal(rep); setEditing(true) }}
+              style={{
+                background: 'rgba(240,165,0,.15)', color: '#8a5c00',
+                border: '1px solid rgba(240,165,0,.3)', borderRadius: 7,
+                padding: '4px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer'
+              }}
+            >
+              ✏️ Modifier
+            </button>
+          </div>
+        )}
+      </div>
+      {rep > 0 && (
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 10, color: '#8a5c00', fontWeight: 600, textTransform: 'uppercase', marginBottom: 2 }}>
+            Caisse totale
+          </div>
+          <div style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 20, color: caisse >= 0 ? 'var(--em-d)' : 'var(--coral)' }}>
+            {fmt(caisse)} FCFA
+          </div>
+          <div style={{ fontSize: 10, color: 'var(--text3)' }}>report + revenus - dépenses</div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Dashboard principal ──
 export default function Dashboard({ setPage }) {
   const { produits, loading: lP } = useProduits()
   const { ventes,   loading: lV } = useVentes()
@@ -53,10 +122,8 @@ export default function Dashboard({ setPage }) {
   const { getReport, setReport }  = useCaisse()
 
   const t = today()
-  const [onglet, setOnglet]       = useState('today')
-  const [moisSel, setMoisSel]     = useState(currentMonth())
-  const [editReport, setEditReport] = useState(false)
-  const [reportVal, setReportVal]   = useState('')
+  const [onglet, setOnglet]   = useState('today')
+  const [moisSel, setMoisSel] = useState(currentMonth())
 
   // Mois disponibles
   const moisDispos = useMemo(() => {
@@ -67,7 +134,6 @@ export default function Dashboard({ setPage }) {
   // Stats calculées
   const stats = useMemo(() => {
     const m = onglet === 'today' ? currentMonth() : moisSel
-
     const ts  = ventes.filter(v => v.date === t)
     const ms  = ventes.filter(v => (v.date || '').startsWith(m))
     const md  = depenses.filter(d => (d.date || '').startsWith(m))
@@ -78,7 +144,6 @@ export default function Dashboard({ setPage }) {
     const report = getReport(m)
     const caisse = tvM - tdM + report
 
-    // Top produits
     const topMap = {}
     ms.filter(v => !v.typeCredit).forEach(v => {
       topMap[v.prodNom] = (topMap[v.prodNom] || 0) + (v.qty || 0)
@@ -86,7 +151,6 @@ export default function Dashboard({ setPage }) {
     const top = Object.entries(topMap).sort((a, b) => b[1] - a[1]).slice(0, 6)
       .map(([label, value]) => ({ label, value }))
 
-    // Heatmap
     const dayMap = {}
     ms.forEach(v => {
       const day = (v.date || '').slice(8, 10)
@@ -114,66 +178,6 @@ export default function Dashboard({ setPage }) {
     border: active ? 'none' : '1.5px solid var(--border)',
   })
 
-  // Bloc report réutilisable
-  const ReportBlock = ({ m }) => {
-    const rep = getReport(m)
-    return (
-      <div style={{
-        background: 'linear-gradient(135deg,#fff8e1,#fffde7)',
-        border: '1.5px solid rgba(240,165,0,.3)',
-        borderRadius: 14, padding: '14px 18px',
-        marginBottom: 20,
-        display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-        boxShadow: '0 4px 16px rgba(240,165,0,.1)',
-      }}>
-        <div style={{ fontSize: 24 }}>💼</div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#8a5c00', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>
-            Report du mois précédent
-          </div>
-          {editReport ? (
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <input
-                type="number"
-                value={reportVal}
-                onChange={e => setReportVal(e.target.value)}
-                placeholder="Montant en FCFA"
-                autoFocus
-                style={{ width: 150, padding: '6px 10px', borderRadius: 8, border: '1.5px solid var(--gold)', fontFamily: 'Lexend,sans-serif', fontSize: 13 }}
-              />
-              <button className="btn btn-gold btn-sm" onClick={async () => { await setReport(m, reportVal); setEditReport(false) }}>
-                ✔ Enregistrer
-              </button>
-              <button className="btn btn-outline btn-sm" onClick={() => setEditReport(false)}>Annuler</button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 20, color: rep > 0 ? '#8a5c00' : 'var(--text3)' }}>
-                {rep > 0 ? fmt(rep) + ' FCFA' : 'Non défini'}
-              </span>
-              <button
-                onClick={() => { setReportVal(rep); setEditReport(true) }}
-                style={{ background: 'rgba(240,165,0,.15)', color: '#8a5c00', border: '1px solid rgba(240,165,0,.3)', borderRadius: 7, padding: '3px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
-              >
-                ✏️ Modifier
-              </button>
-            </div>
-          )}
-        </div>
-        {rep > 0 && (
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 10, color: '#8a5c00', fontWeight: 600, textTransform: 'uppercase', marginBottom: 2 }}>Caisse totale</div>
-            <div style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 20, color: stats.caisse >= 0 ? 'var(--em-d)' : 'var(--coral)' }}>
-              {fmt(stats.caisse)} FCFA
-            </div>
-            <div style={{ fontSize: 10, color: 'var(--text3)' }}>report + revenus - dépenses</div>
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  // Bloc stocks faibles réutilisable
   const StocksFaibles = () => (
     <SCard title="⚠️ Stocks faibles">
       {stats.low.length === 0
@@ -185,7 +189,9 @@ export default function Dashboard({ setPage }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                 <span style={{ fontSize: 13, fontWeight: 600 }}>{p.nom}</span>
                 <span className={p.stock === 0 ? 'badge b-red' : 'badge b-gold'}>
-                  {p.cat === 'Crédit téléphonique' ? fmt(p.stock) + ' FCFA' : p.stock + ' restant' + (p.stock > 1 ? 's' : '')}
+                  {p.cat === 'Crédit téléphonique'
+                    ? fmt(p.stock) + ' FCFA'
+                    : p.stock + ' restant' + (p.stock > 1 ? 's' : '')}
                 </span>
               </div>
               <ProgBar value={p.stock} max={Math.max(p.seuil * 3, 1)} color={col} />
@@ -207,7 +213,7 @@ export default function Dashboard({ setPage }) {
         </div>
       </div>
 
-      {/* ── Onglets ── */}
+      {/* Onglets */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <button style={tabBtn(onglet === 'today')} onClick={() => setOnglet('today')}>🌅 Aujourd'hui</button>
         <button style={tabBtn(onglet === 'mois')} onClick={() => setOnglet('mois')}>📅 Par mois</button>
@@ -219,7 +225,7 @@ export default function Dashboard({ setPage }) {
         )}
       </div>
 
-      {/* ── Alertes stocks ── */}
+      {/* Alertes stocks */}
       {stats.low.length > 0 && (
         <div className="alert-strip">
           <span style={{ fontSize: 20 }}>⚠️</span>
@@ -239,10 +245,15 @@ export default function Dashboard({ setPage }) {
         </div>
       )}
 
-      {/* ══════ ONGLET AUJOURD'HUI ══════ */}
+      {/* ══ ONGLET AUJOURD'HUI ══ */}
       {onglet === 'today' && (
         <>
-          <ReportBlock m={currentMonth()} />
+          <ReportBlock
+            m={currentMonth()}
+            getReport={getReport}
+            setReport={setReport}
+            caisse={stats.caisse}
+          />
 
           <div className="stat-grid">
             <StatCard colorClass="c0" icon="💰" label="Ventes aujourd'hui"
@@ -293,10 +304,15 @@ export default function Dashboard({ setPage }) {
         </>
       )}
 
-      {/* ══════ ONGLET PAR MOIS ══════ */}
+      {/* ══ ONGLET PAR MOIS ══ */}
       {onglet === 'mois' && (
         <>
-          <ReportBlock m={moisSel} />
+          <ReportBlock
+            m={moisSel}
+            getReport={getReport}
+            setReport={setReport}
+            caisse={stats.caisse}
+          />
 
           <div className="stat-grid">
             <StatCard colorClass="c0" icon="💰" label="Revenus"
@@ -334,7 +350,7 @@ export default function Dashboard({ setPage }) {
                       : stats.ms.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(v => (
                         <tr key={v.id}>
                           <td style={{ color: 'var(--text3)', fontSize: 11, whiteSpace: 'nowrap' }}>
-                            {v.date.slice(8,10)}/{v.date.slice(5,7)}
+                            {v.date.slice(8, 10)}/{v.date.slice(5, 7)}
                           </td>
                           <td>
                             <strong>{v.prodNom}</strong>
