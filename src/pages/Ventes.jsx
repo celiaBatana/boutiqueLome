@@ -3,52 +3,76 @@ import { useProduits, useVentes } from '../hooks/useFirebase'
 import { SCard, Spinner, Empty, Field } from '../components/UI'
 import { fmt, today, nowTime } from '../lib/utils'
 
+const isCredit = (p) => p?.cat === 'Crédit téléphonique'
+
 export default function Ventes() {
   const { produits } = useProduits()
   const { ventes, loading, addVente, deleteVente } = useVentes()
-  const [pid, setPid]   = useState('')
-  const [qty, setQty]   = useState(1)
-  const [prix, setPrix] = useState('')
+  const [pid, setPid]       = useState('')
+  const [qty, setQty]       = useState(1)
+  const [prix, setPrix]     = useState('')
+  const [montant, setMontant] = useState('') // pour crédit
   const [saving, setSaving] = useState(false)
 
   const t = today()
   const todayVentes = ventes.filter(v => v.date === t)
   const totalDay = todayVentes.reduce((a, v) => a + (v.total || 0), 0)
 
+  const selectedProd = produits.find(x => x.id === pid)
+  const creditMode = isCredit(selectedProd)
+
   const handleAdd = async () => {
     const p = produits.find(x => x.id === pid)
     if (!p) return alert('Sélectionnez un produit.')
-    if (qty > p.stock) return alert('Stock insuffisant ! Restant : ' + p.stock)
+
+    const { db, COLLECTIONS } = await import('../lib/firebase')
+    const { doc, updateDoc } = await import('firebase/firestore')
     setSaving(true)
+
     try {
-      // Mise à jour du stock
-      const { updateStock } = await import('../hooks/useFirebase').then(m => m.useProduits ? { updateStock: null } : { updateStock: null })
-      // On importe le hook updateStock directement
-      const { db, COLLECTIONS } = await import('../lib/firebase')
-      const { doc, updateDoc } = await import('firebase/firestore')
-      await updateDoc(doc(db, COLLECTIONS.PRODUITS, pid), { stock: p.stock - qty })
-      await addVente({
-        date: t,
-        heure: nowTime(),
-        prodId: pid,
-        prodNom: p.nom,
-        qty: Number(qty),
-        prix: Number(prix),
-        total: Number(qty) * Number(prix),
-      })
-      setPid(''); setQty(1); setPrix('')
+      if (isCredit(p)) {
+        // ── Mode crédit : montant libre, déduit du solde ──
+        const mont = Number(montant)
+        if (!mont || mont <= 0) return alert('Entrez un montant valide.')
+        if (mont > p.stock) return alert(`Solde insuffisant ! Solde : ${fmt(p.stock)} FCFA`)
+        await updateDoc(doc(db, COLLECTIONS.PRODUITS, pid), { stock: p.stock - mont })
+        await addVente({
+          date: t, heure: nowTime(),
+          prodId: pid, prodNom: p.nom,
+          qty: mont,       // on stocke le montant dans qty
+          prix: 1,         // prix unitaire = 1 pour crédit
+          total: mont,
+          typeCredit: true,
+        })
+        setMontant('')
+      } else {
+        // ── Mode normal ──
+        if (qty > p.stock) return alert('Stock insuffisant ! Restant : ' + p.stock)
+        await updateDoc(doc(db, COLLECTIONS.PRODUITS, pid), { stock: p.stock - qty })
+        await addVente({
+          date: t, heure: nowTime(),
+          prodId: pid, prodNom: p.nom,
+          qty: Number(qty), prix: Number(prix),
+          total: Number(qty) * Number(prix),
+          typeCredit: false,
+        })
+        setQty(1); setPrix('')
+      }
+      setPid('')
     } catch (e) { alert('Erreur : ' + e.message) }
     setSaving(false)
   }
 
   const handleDelete = async (v) => {
     if (!confirm('Supprimer cette vente ?')) return
-    // Remettre le stock
     const { db, COLLECTIONS } = await import('../lib/firebase')
     const { doc, updateDoc, getDoc } = await import('firebase/firestore')
     const ref = doc(db, COLLECTIONS.PRODUITS, v.prodId)
     const snap = await getDoc(ref)
-    if (snap.exists()) await updateDoc(ref, { stock: (snap.data().stock || 0) + v.qty })
+    if (snap.exists()) {
+      // Remettre le montant/stock
+      await updateDoc(ref, { stock: (snap.data().stock || 0) + (v.typeCredit ? v.total : v.qty) })
+    }
     await deleteVente(v.id)
   }
 
@@ -66,26 +90,67 @@ export default function Ventes() {
             <select value={pid} onChange={e => {
               setPid(e.target.value)
               const p = produits.find(x => x.id === e.target.value)
-              if (p) setPrix(p.prix)
+              if (p && !isCredit(p)) setPrix(p.prix)
+              setMontant(''); setQty(1)
             }}>
               <option value="">— Choisir —</option>
-              {produits.map(p => (
-                <option key={p.id} value={p.id}>{p.nom} (stock : {p.stock})</option>
-              ))}
+              {/* Produits normaux */}
+              <optgroup label="── Produits ──">
+                {produits.filter(p => !isCredit(p)).map(p => (
+                  <option key={p.id} value={p.id}>{p.nom} (stock : {p.stock})</option>
+                ))}
+              </optgroup>
+              {/* Crédits */}
+              {produits.filter(p => isCredit(p)).length > 0 && (
+                <optgroup label="── Crédit téléphonique ──">
+                  {produits.filter(p => isCredit(p)).map(p => (
+                    <option key={p.id} value={p.id}>📱 {p.nom} (solde : {fmt(p.stock)} FCFA)</option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </Field>
-          <Field label="Quantité">
-            <input type="number" min="1" value={qty} onChange={e => setQty(+e.target.value)} />
-          </Field>
-          <Field label="Prix unitaire (FCFA)">
-            <input type="number" value={prix} onChange={e => setPrix(e.target.value)} placeholder="0" />
-          </Field>
+
+          {creditMode ? (
+            // ── Crédit : juste un montant ──
+            <Field label="Montant vendu (FCFA)">
+              <input
+                type="number" min="1"
+                value={montant}
+                onChange={e => setMontant(e.target.value)}
+                placeholder="Ex: 250"
+              />
+            </Field>
+          ) : (
+            // ── Normal : quantité + prix ──
+            <>
+              <Field label="Quantité">
+                <input type="number" min="1" value={qty} onChange={e => setQty(+e.target.value)} />
+              </Field>
+              <Field label="Prix unitaire (FCFA)">
+                <input type="number" value={prix} onChange={e => setPrix(e.target.value)} placeholder="0" />
+              </Field>
+            </>
+          )}
         </div>
-        {pid && prix && qty && (
+
+        {/* Aperçu total */}
+        {creditMode && montant && (
+          <div style={{ marginBottom: 12, padding: '10px 14px', background: 'rgba(14,165,107,.08)', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 13, color: 'var(--text2)' }}>
+              📱 Solde restant après vente :
+            </span>
+            <strong style={{ color: selectedProd?.stock - montant < (selectedProd?.seuil || 0) ? 'var(--coral)' : 'var(--em)', fontSize: 15 }}>
+              {fmt((selectedProd?.stock || 0) - Number(montant))} FCFA
+            </strong>
+          </div>
+        )}
+        {!creditMode && pid && prix && qty && (
           <div style={{ marginBottom: 12, color: 'var(--em)', fontWeight: 700, fontSize: 14 }}>
             Total : {fmt(qty * prix)} FCFA
           </div>
         )}
+
         <button className="btn btn-em" onClick={handleAdd} disabled={saving}>
           {saving ? '…' : '✚ Enregistrer la vente'}
         </button>
@@ -103,7 +168,7 @@ export default function Ventes() {
         <div className="tw">
           <table>
             <thead>
-              <tr><th>Heure</th><th>Produit</th><th>Qté</th><th>P.U.</th><th>Total</th><th></th></tr>
+              <tr><th>Heure</th><th>Produit</th><th>Qté / Montant</th><th>P.U.</th><th>Total</th><th></th></tr>
             </thead>
             <tbody>
               {todayVentes.length === 0
@@ -111,9 +176,12 @@ export default function Ventes() {
                 : todayVentes.map(v => (
                   <tr key={v.id}>
                     <td style={{ color: 'var(--text3)' }}>{v.heure}</td>
-                    <td><strong>{v.prodNom}</strong></td>
-                    <td>{v.qty}</td>
-                    <td>{fmt(v.prix)} FCFA</td>
+                    <td>
+                      <strong>{v.prodNom}</strong>
+                      {v.typeCredit && <span className="badge b-sky" style={{ marginLeft: 6 }}>📱 Crédit</span>}
+                    </td>
+                    <td>{v.typeCredit ? `${fmt(v.qty)} FCFA` : v.qty}</td>
+                    <td>{v.typeCredit ? '—' : `${fmt(v.prix)} FCFA`}</td>
                     <td><span style={{ color: 'var(--em)', fontWeight: 700 }}>{fmt(v.total)} FCFA</span></td>
                     <td><button className="btn btn-del btn-xs" onClick={() => handleDelete(v)}>✕</button></td>
                   </tr>
