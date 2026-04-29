@@ -27,7 +27,8 @@ export const MEDALS = ['🥇','🥈','🥉']
 
 export const CAT_PRODUITS = [
   'Boissons','Biscuits','Eau','Chaussures/Talons',
-  'Sacs','Vêtements','Parfums','Masques','Déodorants','Mouchoirs','Autre'
+  'Sacs','Vêtements','Parfums','Masques','Déodorants','Mouchoirs',
+  'Crédit téléphonique','Autre'
 ]
 export const CAT_DEPENSES = [
   'Loyer','Transport','Électricité/Eau','Réapprovisionnement','Personnel','Autre'
