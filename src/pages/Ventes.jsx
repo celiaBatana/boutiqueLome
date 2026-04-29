@@ -17,7 +17,7 @@ export default function Ventes() {
   const [saving, setSaving]   = useState(false)
 
   // Filtres
-  const [filterMode, setFilterMode] = useState('mois') // 'jour' | 'mois'
+  const [filterMode, setFilterMode] = useState('mois')
   const [filterJour, setFilterJour] = useState(today())
   const [filterMois, setFilterMois] = useState(currentMonth())
 
@@ -26,13 +26,13 @@ export default function Ventes() {
   const selectedProd = produits.find(x => x.id === pid)
   const creditMode = isCredit(selectedProd)
 
-  // Liste des mois disponibles
+  // Mois disponibles
   const moisDispos = useMemo(() => {
     const s = new Set([...ventes.map(v => monthKey(v.date)), currentMonth()])
     return [...s].filter(Boolean).sort().reverse()
   }, [ventes])
 
-  // Liste des jours avec ventes dans le mois sélectionné
+  // Jours disponibles dans le mois sélectionné
   const joursDispos = useMemo(() => {
     const s = new Set(ventes.filter(v => (v.date || '').startsWith(filterMois)).map(v => v.date))
     return [...s].filter(Boolean).sort().reverse()
@@ -44,7 +44,7 @@ export default function Ventes() {
     return ventes.filter(v => (v.date || '').startsWith(filterMois))
   }, [ventes, filterMode, filterJour, filterMois])
 
-  // Grouper par jour
+  // Groupées par jour
   const ventesParJour = useMemo(() => {
     const map = {}
     ventesFiltrees.forEach(v => {
@@ -60,8 +60,8 @@ export default function Ventes() {
     if (!d) return ''
     if (d === t) return "Aujourd'hui"
     const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1)
-    if (d === yesterday.toISOString().slice(0,10)) return 'Hier'
-    return d.slice(8,10) + '/' + d.slice(5,7) + '/' + d.slice(0,4)
+    if (d === yesterday.toISOString().slice(0, 10)) return 'Hier'
+    return d.slice(8, 10) + '/' + d.slice(5, 7) + '/' + d.slice(0, 4)
   }
 
   const handleAdd = async () => {
@@ -115,33 +115,43 @@ export default function Ventes() {
               type="text" value={date}
               onChange={e => {
                 let v = e.target.value.replace(/[^0-9-]/g, '')
-                if (/^\d{2}$/.test(v)) v = new Date().getFullYear() + '-' + new Date().toISOString().slice(5,7) + '-' + v
-                if (/^\d{4}$/.test(v)) v = new Date().getFullYear() + '-' + v.slice(0,2) + '-' + v.slice(2,4)
-                if (/^\d{2}-\d{2}$/.test(v)) v = new Date().getFullYear() + '-' + v.slice(3,5) + '-' + v.slice(0,2)
+                if (/^\d{2}$/.test(v)) v = new Date().getFullYear() + '-' + new Date().toISOString().slice(5, 7) + '-' + v
+                if (/^\d{4}$/.test(v)) v = new Date().getFullYear() + '-' + v.slice(0, 2) + '-' + v.slice(2, 4)
+                if (/^\d{2}-\d{2}$/.test(v)) v = new Date().getFullYear() + '-' + v.slice(3, 5) + '-' + v.slice(0, 2)
                 setDate(v); sessionStorage.setItem('lastVenteDate', v)
               }}
               placeholder="01 → 2026-04-01 · 0401 → 2026-04-01"
               style={{ fontFamily: 'monospace' }}
             />
           </Field>
+
           <Field label="Produit">
-            <input list="prod-list" value={prodSearch}
+            <input
+              list="produits-datalist"
+              value={prodSearch}
+              autoComplete="off"
               onChange={e => {
-                setProdSearch(e.target.value)
-                const p = produits.find(x => x.nom === e.target.value)
-                if (p) { setPid(p.id); if (!isCredit(p)) setPrix(p.prix); setMontant(''); setQty(1) }
-                else setPid('')
+                const val = e.target.value
+                setProdSearch(val)
+                // Recherche insensible à la casse
+                const p = produits.find(x => x.nom.toLowerCase() === val.toLowerCase())
+                if (p) {
+                  setPid(p.id)
+                  if (!isCredit(p)) setPrix(p.prix)
+                  setMontant(''); setQty(1)
+                } else {
+                  setPid('')
+                }
               }}
               placeholder="Tapez pour chercher un produit…"
             />
-            <datalist id="prod-list">
+            <datalist id="produits-datalist">
               {produits.map(p => (
-                <option key={p.id} value={p.nom}>
-                  {isCredit(p) ? `📱 Solde: ${fmt(p.stock)} FCFA` : `Stock: ${p.stock}`}
-                </option>
+                <option key={p.id} value={p.nom} />
               ))}
             </datalist>
           </Field>
+
           {creditMode ? (
             <Field label="Montant vendu (FCFA)">
               <input type="number" min="1" value={montant} onChange={e => setMontant(e.target.value)} placeholder="Ex: 250" />
@@ -178,14 +188,12 @@ export default function Ventes() {
 
       {/* ── Liste des ventes ── */}
       <div className="scard">
-
-        {/* Header + filtres */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
           <div className="scard-title" style={{ flex: 1 }}>Ventes</div>
           <span className="live-dot">Temps réel</span>
         </div>
 
-        {/* Boutons mode + sélecteurs */}
+        {/* Filtres */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
           <button
             className={`btn btn-sm ${filterMode === 'mois' ? 'btn-em' : 'btn-outline'}`}
@@ -197,21 +205,15 @@ export default function Ventes() {
           >📆 Par jour</button>
 
           {filterMode === 'mois' && (
-            <select
-              value={filterMois}
-              onChange={e => setFilterMois(e.target.value)}
-              style={{ padding: '6px 30px 6px 12px', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg)', fontFamily: 'Lexend,sans-serif', fontSize: 13, color: 'var(--text)' }}
-            >
+            <select value={filterMois} onChange={e => setFilterMois(e.target.value)}
+              style={{ padding: '6px 30px 6px 12px', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg)', fontFamily: 'Lexend,sans-serif', fontSize: 13, color: 'var(--text)' }}>
               {moisDispos.map(m => <option key={m} value={m}>{fmtMonth(m)}</option>)}
             </select>
           )}
 
           {filterMode === 'jour' && (
-            <select
-              value={filterJour}
-              onChange={e => setFilterJour(e.target.value)}
-              style={{ padding: '6px 30px 6px 12px', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg)', fontFamily: 'Lexend,sans-serif', fontSize: 13, color: 'var(--text)' }}
-            >
+            <select value={filterJour} onChange={e => setFilterJour(e.target.value)}
+              style={{ padding: '6px 30px 6px 12px', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg)', fontFamily: 'Lexend,sans-serif', fontSize: 13, color: 'var(--text)' }}>
               {joursDispos.length === 0
                 ? <option value={filterJour}>{fmtDate(filterJour)}</option>
                 : joursDispos.map(d => <option key={d} value={d}>{fmtDate(d)}</option>)
@@ -235,14 +237,11 @@ export default function Ventes() {
             const isToday = jour === t
             return (
               <div key={jour} style={{ marginBottom: 20 }}>
-
                 {/* Bandeau jour */}
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '7px 12px', marginBottom: 6,
-                  background: isToday
-                    ? 'linear-gradient(90deg,rgba(14,165,107,.15),transparent)'
-                    : 'linear-gradient(90deg,var(--bg),transparent)',
+                  background: isToday ? 'linear-gradient(90deg,rgba(14,165,107,.15),transparent)' : 'linear-gradient(90deg,var(--bg),transparent)',
                   borderRadius: 8,
                   borderLeft: isToday ? '3px solid var(--em)' : '3px solid var(--border)',
                 }}>
