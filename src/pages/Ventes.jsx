@@ -12,7 +12,7 @@ export default function Ventes() {
   const [qty, setQty]       = useState(1)
   const [prix, setPrix]     = useState('')
   const [montant, setMontant] = useState('') // pour crédit
-  const [date, setDate] = useState(today())
+  const [date, setDate] = useState(() => sessionStorage.getItem('lastVenteDate') || today())
   const [prodSearch, setProdSearch] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -102,6 +102,7 @@ export default function Ventes() {
                 if (/^\d{4}$/.test(v)) v = new Date().getFullYear() + '-' + v.slice(0,2) + '-' + v.slice(2,4)
                 if (/^\d{2}-\d{2}$/.test(v)) v = new Date().getFullYear() + '-' + v.slice(3,5) + '-' + v.slice(0,2)
                 setDate(v)
+                sessionStorage.setItem('lastVenteDate', v)
               }}
               placeholder="01 → 2025-04-01 · 0401 → 2025-04-01"
               style={{ fontFamily: 'monospace' }}
