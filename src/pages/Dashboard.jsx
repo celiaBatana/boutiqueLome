@@ -169,7 +169,7 @@ export default function Dashboard({ setPage }) {
               value={fmt(stats.tvM)} sub="FCFA" />
             <StatCard colorClass="c2" icon="📉" label="Dépenses du mois"
               value={fmt(stats.tdM)} sub="FCFA" />
-            <StatCard colorClass="c3" icon={stats.ben >= 0 ? '🟢' : '🔴'} label="Bénéfice net"
+            <StatCard colorClass="c3" icon={stats.ben >= 0 ? '🟢' : '🔴'} label="Caisse"
               value={fmt(stats.ben)} sub="FCFA ce mois" />
             <StatCard colorClass="c4" icon="📦" label="Produits"
               value={produits.length} sub={`${stats.low.length} alerte${stats.low.length > 1 ? 's' : ''}`} />
