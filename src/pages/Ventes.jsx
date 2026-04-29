@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useProduits, useVentes } from '../hooks/useFirebase'
 import { SCard, Spinner, Empty, Field } from '../components/UI'
 import { fmt, today, nowTime } from '../lib/utils'
@@ -8,21 +8,31 @@ const isCredit = (p) => p?.cat === 'Crédit téléphonique'
 export default function Ventes() {
   const { produits } = useProduits()
   const { ventes, loading, addVente, deleteVente } = useVentes()
-  const [pid, setPid]       = useState('')
-  const [qty, setQty]       = useState(1)
-  const [prix, setPrix]     = useState('')
-  const [montant, setMontant] = useState('') // pour crédit
-  const [date, setDate] = useState(() => sessionStorage.getItem('lastVenteDate') || today())
+  const [pid, setPid]         = useState('')
+  const [qty, setQty]         = useState(1)
+  const [prix, setPrix]       = useState('')
+  const [montant, setMontant] = useState('')
+  const [date, setDate]       = useState(() => sessionStorage.getItem('lastVenteDate') || today())
   const [prodSearch, setProdSearch] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [saving, setSaving]   = useState(false)
 
   const t = today()
-  const todayVentes = ventes.filter(v => v.date === t)
   const selectedDate = date || t
-  const totalDay = todayVentes.reduce((a, v) => a + (v.total || 0), 0)
 
   const selectedProd = produits.find(x => x.id === pid)
   const creditMode = isCredit(selectedProd)
+
+  // 5 derniers jours
+  const last5days = useMemo(() => Array.from({ length: 5 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - i)
+    return d.toISOString().slice(0, 10)
+  }), [t])
+
+  const recentVentes = useMemo(() =>
+    ventes.filter(v => last5days.includes(v.date))
+  , [ventes, last5days])
+
+  const totalRecent = recentVentes.reduce((a, v) => a + (v.total || 0), 0)
 
   const handleAdd = async () => {
     const p = produits.find(x => x.id === pid)
@@ -34,7 +44,6 @@ export default function Ventes() {
 
     try {
       if (isCredit(p)) {
-        // ── Mode crédit : montant libre, déduit du solde ──
         const mont = Number(montant)
         if (!mont || mont <= 0) return alert('Entrez un montant valide.')
         if (mont > p.stock) return alert(`Solde insuffisant ! Solde : ${fmt(p.stock)} FCFA`)
@@ -42,14 +51,11 @@ export default function Ventes() {
         await addVente({
           date: selectedDate, heure: nowTime(),
           prodId: pid, prodNom: p.nom,
-          qty: mont,       // on stocke le montant dans qty
-          prix: 1,         // prix unitaire = 1 pour crédit
-          total: mont,
+          qty: mont, prix: 1, total: mont,
           typeCredit: true,
         })
         setMontant('')
       } else {
-        // ── Mode normal ──
         if (qty > p.stock) return alert('Stock insuffisant ! Restant : ' + p.stock)
         await updateDoc(doc(db, COLLECTIONS.PRODUITS, pid), { stock: p.stock - qty })
         await addVente({
@@ -74,7 +80,6 @@ export default function Ventes() {
     const ref = doc(db, COLLECTIONS.PRODUITS, v.prodId)
     const snap = await getDoc(ref)
     if (snap.exists()) {
-      // Remettre le montant/stock
       await updateDoc(ref, { stock: (snap.data().stock || 0) + (v.typeCredit ? v.total : v.qty) })
     }
     await deleteVente(v.id)
@@ -96,17 +101,17 @@ export default function Ventes() {
               value={date}
               onChange={e => {
                 let v = e.target.value.replace(/[^0-9-]/g, '')
-                // Auto-complétion : "01" → "2025-04-01", "0104" → "2025-04-01", "04-01" → "2025-04-01"
                 if (/^\d{2}$/.test(v)) v = new Date().getFullYear() + '-' + new Date().toISOString().slice(5,7) + '-' + v
                 if (/^\d{4}$/.test(v)) v = new Date().getFullYear() + '-' + v.slice(0,2) + '-' + v.slice(2,4)
                 if (/^\d{2}-\d{2}$/.test(v)) v = new Date().getFullYear() + '-' + v.slice(3,5) + '-' + v.slice(0,2)
                 setDate(v)
                 sessionStorage.setItem('lastVenteDate', v)
               }}
-              placeholder="01 → 2025-04-01 · 0401 → 2025-04-01"
+              placeholder="01 → 2026-04-01 · 0401 → 2026-04-01"
               style={{ fontFamily: 'monospace' }}
             />
-        </Field>
+          </Field>
+
           <Field label="Produit">
             <input
               list="prod-list"
@@ -131,10 +136,9 @@ export default function Ventes() {
                 </option>
               ))}
             </datalist>
-        </Field>
+          </Field>
 
           {creditMode ? (
-            // ── Crédit : juste un montant ──
             <Field label="Montant vendu (FCFA)">
               <input
                 type="number" min="1"
@@ -144,7 +148,6 @@ export default function Ventes() {
               />
             </Field>
           ) : (
-            // ── Normal : quantité + prix ──
             <>
               <Field label="Quantité">
                 <input type="number" min="1" value={qty} onChange={e => setQty(+e.target.value)} />
@@ -156,12 +159,9 @@ export default function Ventes() {
           )}
         </div>
 
-        {/* Aperçu total */}
         {creditMode && montant && (
           <div style={{ marginBottom: 12, padding: '10px 14px', background: 'rgba(14,165,107,.08)', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 13, color: 'var(--text2)' }}>
-              📱 Solde restant après vente :
-            </span>
+            <span style={{ fontSize: 13, color: 'var(--text2)' }}>📱 Solde restant après vente :</span>
             <strong style={{ color: selectedProd?.stock - montant < (selectedProd?.seuil || 0) ? 'var(--coral)' : 'var(--em)', fontSize: 15 }}>
               {fmt((selectedProd?.stock || 0) - Number(montant))} FCFA
             </strong>
@@ -178,25 +178,33 @@ export default function Ventes() {
         </button>
       </SCard>
 
-      <SCard title="Ventes du jour">
+      <SCard title="Ventes des 5 derniers jours">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <span className="live-dot">Mise à jour en temps réel</span>
-          {todayVentes.length > 0 && (
+          {recentVentes.length > 0 && (
             <span style={{ fontFamily: 'Nunito,sans-serif', fontSize: 15, fontWeight: 800, color: 'var(--em)' }}>
-              Total : {fmt(totalDay)} FCFA
+              Total : {fmt(totalRecent)} FCFA
             </span>
           )}
         </div>
         <div className="tw">
           <table>
             <thead>
-              <tr><th>Heure</th><th>Produit</th><th>Qté / Montant</th><th>P.U.</th><th>Total</th><th></th></tr>
+              <tr><th>Date</th><th>Heure</th><th>Produit</th><th>Qté / Montant</th><th>P.U.</th><th>Total</th><th></th></tr>
             </thead>
             <tbody>
-              {todayVentes.length === 0
-                ? <tr><td colSpan={6}><Empty icon="🛒" text="Aucune vente aujourd'hui" /></td></tr>
-                : todayVentes.map(v => (
-                  <tr key={v.id}>
+              {recentVentes.length === 0
+                ? <tr><td colSpan={7}><Empty icon="🛒" text="Aucune vente ces 5 derniers jours" /></td></tr>
+                : recentVentes.map(v => (
+                  <tr key={v.id} style={{ background: v.date === t ? 'rgba(14,165,107,.04)' : 'transparent' }}>
+                    <td>
+                      <span style={{
+                        fontSize: 11, fontWeight: 700,
+                        color: v.date === t ? 'var(--em)' : 'var(--text3)',
+                      }}>
+                        {v.date === t ? "Auj." : v.date.slice(8,10) + '/' + v.date.slice(5,7)}
+                      </span>
+                    </td>
                     <td style={{ color: 'var(--text3)' }}>{v.heure}</td>
                     <td>
                       <strong>{v.prodNom}</strong>
