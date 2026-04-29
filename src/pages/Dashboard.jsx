@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useProduits, useVentes, useDepenses } from '../hooks/useFirebase'
+import { useProduits, useVentes, useDepenses, useCaisse } from '../hooks/useFirebase'
 import { StatCard, SCard, Spinner, Empty, ProgBar, BarChart } from '../components/UI'
 import { fmt, today, currentMonth, monthKey, fmtMonth } from '../lib/utils'
 
@@ -50,10 +50,13 @@ export default function Dashboard({ setPage }) {
   const { produits, loading: lP } = useProduits()
   const { ventes,   loading: lV } = useVentes()
   const { depenses, loading: lD } = useDepenses()
+  const { getReport, setReport }  = useCaisse()
 
   const t = today()
-  const [onglet, setOnglet]   = useState('today') // 'today' | 'mois'
-  const [moisSel, setMoisSel] = useState(currentMonth())
+  const [onglet, setOnglet]       = useState('today')
+  const [moisSel, setMoisSel]     = useState(currentMonth())
+  const [editReport, setEditReport] = useState(false)
+  const [reportVal, setReportVal]   = useState('')
 
   // Mois disponibles
   const moisDispos = useMemo(() => {
@@ -61,7 +64,7 @@ export default function Dashboard({ setPage }) {
     return [...s].filter(Boolean).sort().reverse()
   }, [ventes])
 
-  // Stats calculées selon onglet/mois
+  // Stats calculées
   const stats = useMemo(() => {
     const m = onglet === 'today' ? currentMonth() : moisSel
 
@@ -72,6 +75,8 @@ export default function Dashboard({ setPage }) {
     const tvM = ms.reduce((a, v) => a + (v.total || 0), 0)
     const tdM = md.reduce((a, d) => a + (d.montant || 0), 0)
     const low = produits.filter(p => p.stock <= p.seuil)
+    const report = getReport(m)
+    const caisse = tvM - tdM + report
 
     // Top produits
     const topMap = {}
@@ -94,8 +99,8 @@ export default function Dashboard({ setPage }) {
     const maxDay = Math.max(...days.map(d => d.total), 1)
     const top4 = [...days].sort((a, b) => b.total - a.total).slice(0, 4).map(d => d.day)
 
-    return { ts, ms, tvT, tvM, tdM, ben: tvM - tdM, low, top, days, top4, maxDay, m }
-  }, [ventes, depenses, produits, t, onglet, moisSel])
+    return { ts, ms, tvT, tvM, tdM, ben: tvM - tdM, caisse, report, low, top, days, top4, maxDay, m }
+  }, [ventes, depenses, produits, t, onglet, moisSel, getReport])
 
   if (lP || lV || lD) return <Spinner />
 
@@ -108,6 +113,88 @@ export default function Dashboard({ setPage }) {
     boxShadow: active ? '0 4px 14px var(--em-g)' : 'none',
     border: active ? 'none' : '1.5px solid var(--border)',
   })
+
+  // Bloc report réutilisable
+  const ReportBlock = ({ m }) => {
+    const rep = getReport(m)
+    return (
+      <div style={{
+        background: 'linear-gradient(135deg,#fff8e1,#fffde7)',
+        border: '1.5px solid rgba(240,165,0,.3)',
+        borderRadius: 14, padding: '14px 18px',
+        marginBottom: 20,
+        display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+        boxShadow: '0 4px 16px rgba(240,165,0,.1)',
+      }}>
+        <div style={{ fontSize: 24 }}>💼</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#8a5c00', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>
+            Report du mois précédent
+          </div>
+          {editReport ? (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <input
+                type="number"
+                value={reportVal}
+                onChange={e => setReportVal(e.target.value)}
+                placeholder="Montant en FCFA"
+                autoFocus
+                style={{ width: 150, padding: '6px 10px', borderRadius: 8, border: '1.5px solid var(--gold)', fontFamily: 'Lexend,sans-serif', fontSize: 13 }}
+              />
+              <button className="btn btn-gold btn-sm" onClick={async () => { await setReport(m, reportVal); setEditReport(false) }}>
+                ✔ Enregistrer
+              </button>
+              <button className="btn btn-outline btn-sm" onClick={() => setEditReport(false)}>Annuler</button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 20, color: rep > 0 ? '#8a5c00' : 'var(--text3)' }}>
+                {rep > 0 ? fmt(rep) + ' FCFA' : 'Non défini'}
+              </span>
+              <button
+                onClick={() => { setReportVal(rep); setEditReport(true) }}
+                style={{ background: 'rgba(240,165,0,.15)', color: '#8a5c00', border: '1px solid rgba(240,165,0,.3)', borderRadius: 7, padding: '3px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+              >
+                ✏️ Modifier
+              </button>
+            </div>
+          )}
+        </div>
+        {rep > 0 && (
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 10, color: '#8a5c00', fontWeight: 600, textTransform: 'uppercase', marginBottom: 2 }}>Caisse totale</div>
+            <div style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 20, color: stats.caisse >= 0 ? 'var(--em-d)' : 'var(--coral)' }}>
+              {fmt(stats.caisse)} FCFA
+            </div>
+            <div style={{ fontSize: 10, color: 'var(--text3)' }}>report + revenus - dépenses</div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Bloc stocks faibles réutilisable
+  const StocksFaibles = () => (
+    <SCard title="⚠️ Stocks faibles">
+      {stats.low.length === 0
+        ? <Empty icon="✅" text="Tous les stocks sont OK !" />
+        : stats.low.slice(0, 6).map(p => {
+          const col = p.stock === 0 ? 'var(--coral)' : 'var(--gold)'
+          return (
+            <div key={p.id} style={{ marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>{p.nom}</span>
+                <span className={p.stock === 0 ? 'badge b-red' : 'badge b-gold'}>
+                  {p.cat === 'Crédit téléphonique' ? fmt(p.stock) + ' FCFA' : p.stock + ' restant' + (p.stock > 1 ? 's' : '')}
+                </span>
+              </div>
+              <ProgBar value={p.stock} max={Math.max(p.seuil * 3, 1)} color={col} />
+            </div>
+          )
+        })
+      }
+    </SCard>
+  )
 
   return (
     <div>
@@ -122,24 +209,17 @@ export default function Dashboard({ setPage }) {
 
       {/* ── Onglets ── */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-        <button style={tabBtn(onglet === 'today')} onClick={() => setOnglet('today')}>
-          🌅 Aujourd'hui
-        </button>
-        <button style={tabBtn(onglet === 'mois')} onClick={() => setOnglet('mois')}>
-          📅 Par mois
-        </button>
+        <button style={tabBtn(onglet === 'today')} onClick={() => setOnglet('today')}>🌅 Aujourd'hui</button>
+        <button style={tabBtn(onglet === 'mois')} onClick={() => setOnglet('mois')}>📅 Par mois</button>
         {onglet === 'mois' && (
-          <select
-            value={moisSel}
-            onChange={e => setMoisSel(e.target.value)}
-            style={{ padding: '8px 30px 8px 12px', borderRadius: 10, border: '1.5px solid var(--border)', background: 'var(--bg)', fontFamily: 'Lexend,sans-serif', fontSize: 13, color: 'var(--text)' }}
-          >
+          <select value={moisSel} onChange={e => setMoisSel(e.target.value)}
+            style={{ padding: '8px 30px 8px 12px', borderRadius: 10, border: '1.5px solid var(--border)', background: 'var(--bg)', fontFamily: 'Lexend,sans-serif', fontSize: 13, color: 'var(--text)' }}>
             {moisDispos.map(m => <option key={m} value={m}>{fmtMonth(m)}</option>)}
           </select>
         )}
       </div>
 
-      {/* ── Alertes stocks (toujours visibles) ── */}
+      {/* ── Alertes stocks ── */}
       {stats.low.length > 0 && (
         <div className="alert-strip">
           <span style={{ fontSize: 20 }}>⚠️</span>
@@ -162,6 +242,8 @@ export default function Dashboard({ setPage }) {
       {/* ══════ ONGLET AUJOURD'HUI ══════ */}
       {onglet === 'today' && (
         <>
+          <ReportBlock m={currentMonth()} />
+
           <div className="stat-grid">
             <StatCard colorClass="c0" icon="💰" label="Ventes aujourd'hui"
               value={fmt(stats.tvT)} sub={`FCFA · ${stats.ts.length} vente${stats.ts.length > 1 ? 's' : ''}`} />
@@ -169,8 +251,9 @@ export default function Dashboard({ setPage }) {
               value={fmt(stats.tvM)} sub="FCFA" />
             <StatCard colorClass="c2" icon="📉" label="Dépenses du mois"
               value={fmt(stats.tdM)} sub="FCFA" />
-            <StatCard colorClass="c3" icon={stats.ben >= 0 ? '🟢' : '🔴'} label="Caisse"
-              value={fmt(stats.ben)} sub="FCFA ce mois" />
+            <StatCard colorClass="c3" icon="💼" label="Caisse"
+              value={fmt(stats.caisse)}
+              sub={stats.report > 0 ? `dont report ${fmt(stats.report)} FCFA` : 'FCFA ce mois'} />
             <StatCard colorClass="c4" icon="📦" label="Produits"
               value={produits.length} sub={`${stats.low.length} alerte${stats.low.length > 1 ? 's' : ''}`} />
           </div>
@@ -201,25 +284,7 @@ export default function Dashboard({ setPage }) {
               <BarChart data={stats.top} />
             </SCard>
 
-            <SCard title="⚠️ Stocks faibles">
-              {stats.low.length === 0
-                ? <Empty icon="✅" text="Tous les stocks sont OK !" />
-                : stats.low.slice(0, 6).map(p => {
-                  const col = p.stock === 0 ? 'var(--coral)' : 'var(--gold)'
-                  return (
-                    <div key={p.id} style={{ marginBottom: 12 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span style={{ fontSize: 13, fontWeight: 600 }}>{p.nom}</span>
-                        <span className={p.stock === 0 ? 'badge b-red' : 'badge b-gold'}>
-                          {p.cat === 'Crédit téléphonique' ? fmt(p.stock) + ' FCFA' : p.stock + ' restant' + (p.stock > 1 ? 's' : '')}
-                        </span>
-                      </div>
-                      <ProgBar value={p.stock} max={Math.max(p.seuil * 3, 1)} color={col} />
-                    </div>
-                  )
-                })
-              }
-            </SCard>
+            <StocksFaibles />
 
             <SCard title={`📆 Ventes par jour — ${fmtMonth(stats.m)}`}>
               <Heatmap days={stats.days} top4={stats.top4} maxDay={stats.maxDay} />
@@ -231,21 +296,23 @@ export default function Dashboard({ setPage }) {
       {/* ══════ ONGLET PAR MOIS ══════ */}
       {onglet === 'mois' && (
         <>
+          <ReportBlock m={moisSel} />
+
           <div className="stat-grid">
             <StatCard colorClass="c0" icon="💰" label="Revenus"
               value={fmt(stats.tvM)} sub={`FCFA · ${stats.ms.length} vente${stats.ms.length > 1 ? 's' : ''}`} />
             <StatCard colorClass="c2" icon="📉" label="Dépenses"
               value={fmt(stats.tdM)} sub="FCFA" />
-            <StatCard colorClass={stats.ben >= 0 ? 'c1' : 'c2'} icon={stats.ben >= 0 ? '🟢' : '🔴'} label="Bénéfice"
-              value={fmt(stats.ben)} sub="FCFA" />
+            <StatCard colorClass="c3" icon="💼" label="Caisse"
+              value={fmt(stats.caisse)}
+              sub={stats.report > 0 ? `dont report ${fmt(stats.report)} FCFA` : 'FCFA'} />
             <StatCard colorClass="c4" icon="🛒" label="Nb ventes"
               value={stats.ms.length} sub="transactions" />
-            <StatCard colorClass="c3" icon="📦" label="Stocks faibles"
+            <StatCard colorClass="c1" icon="📦" label="Stocks faibles"
               value={stats.low.length} sub="alerte(s)" />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }} className="two-col">
-
             <SCard title="🏆 Top produits du mois">
               <BarChart data={stats.top} />
             </SCard>
@@ -254,25 +321,7 @@ export default function Dashboard({ setPage }) {
               <Heatmap days={stats.days} top4={stats.top4} maxDay={stats.maxDay} />
             </SCard>
 
-            <SCard title="⚠️ Stocks faibles">
-              {stats.low.length === 0
-                ? <Empty icon="✅" text="Tous les stocks sont OK !" />
-                : stats.low.slice(0, 6).map(p => {
-                  const col = p.stock === 0 ? 'var(--coral)' : 'var(--gold)'
-                  return (
-                    <div key={p.id} style={{ marginBottom: 12 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span style={{ fontSize: 13, fontWeight: 600 }}>{p.nom}</span>
-                        <span className={p.stock === 0 ? 'badge b-red' : 'badge b-gold'}>
-                          {p.cat === 'Crédit téléphonique' ? fmt(p.stock) + ' FCFA' : p.stock + ' restant' + (p.stock > 1 ? 's' : '')}
-                        </span>
-                      </div>
-                      <ProgBar value={p.stock} max={Math.max(p.seuil * 3, 1)} color={col} />
-                    </div>
-                  )
-                })
-              }
-            </SCard>
+            <StocksFaibles />
 
             <SCard title="🧾 Toutes les ventes du mois"
               action={<button className="btn btn-outline btn-sm" onClick={() => setPage('ventes')}>Gérer →</button>}>
@@ -299,7 +348,6 @@ export default function Dashboard({ setPage }) {
                 </table>
               </div>
             </SCard>
-
           </div>
         </>
       )}
