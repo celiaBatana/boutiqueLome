@@ -24,7 +24,7 @@ export default function Historique() {
     const tvM = mv.reduce((a, v) => a + (v.total || 0), 0)
     const tdM = md.reduce((a, d) => a + (d.montant || 0), 0)
     const topMap = {}
-    mv.forEach(v => {
+    mv.filter(v => !v.typeCredit).forEach(v => {
       if (!topMap[v.prodNom]) topMap[v.prodNom] = { qty: 0, rev: 0 }
       topMap[v.prodNom].qty += v.qty || 0
       topMap[v.prodNom].rev += v.total || 0
