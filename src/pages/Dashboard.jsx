@@ -21,7 +21,7 @@ export default function Dashboard({ setPage }) {
 
     // Top produits du mois
     const topMap = {}
-    ms.forEach(v => { topMap[v.prodNom] = (topMap[v.prodNom] || 0) + (v.qty || 0) })
+    ms.filter(v => !v.typeCredit).forEach(v => { topMap[v.prodNom] = (topMap[v.prodNom] || 0) + (v.qty || 0) })
     const top = Object.entries(topMap).sort((a, b) => b[1] - a[1]).slice(0, 6)
       .map(([label, value]) => ({ label, value }))
 
