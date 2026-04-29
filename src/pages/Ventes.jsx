@@ -12,10 +12,12 @@ export default function Ventes() {
   const [qty, setQty]       = useState(1)
   const [prix, setPrix]     = useState('')
   const [montant, setMontant] = useState('') // pour crédit
+  const [date, setDate] = useState(today())
   const [saving, setSaving] = useState(false)
 
   const t = today()
   const todayVentes = ventes.filter(v => v.date === t)
+  const selectedDate = date || t
   const totalDay = todayVentes.reduce((a, v) => a + (v.total || 0), 0)
 
   const selectedProd = produits.find(x => x.id === pid)
@@ -37,7 +39,7 @@ export default function Ventes() {
         if (mont > p.stock) return alert(`Solde insuffisant ! Solde : ${fmt(p.stock)} FCFA`)
         await updateDoc(doc(db, COLLECTIONS.PRODUITS, pid), { stock: p.stock - mont })
         await addVente({
-          date: t, heure: nowTime(),
+          date: selectedDate, heure: nowTime(),
           prodId: pid, prodNom: p.nom,
           qty: mont,       // on stocke le montant dans qty
           prix: 1,         // prix unitaire = 1 pour crédit
@@ -50,7 +52,7 @@ export default function Ventes() {
         if (qty > p.stock) return alert('Stock insuffisant ! Restant : ' + p.stock)
         await updateDoc(doc(db, COLLECTIONS.PRODUITS, pid), { stock: p.stock - qty })
         await addVente({
-          date: t, heure: nowTime(),
+          date: selectedDate, heure: nowTime(),
           prodId: pid, prodNom: p.nom,
           qty: Number(qty), prix: Number(prix),
           total: Number(qty) * Number(prix),
@@ -59,6 +61,7 @@ export default function Ventes() {
         setQty(1); setPrix('')
       }
       setPid('')
+      setDate(today())
     } catch (e) { alert('Erreur : ' + e.message) }
     setSaving(false)
   }
@@ -86,6 +89,9 @@ export default function Ventes() {
 
       <SCard title="Nouvelle vente">
         <div className="form-grid">
+          <Field label="Date de vente">
+            <input type="date" value={date} onChange={e => setDate(e.target.value)} />
+          </Field>
           <Field label="Produit">
             <select value={pid} onChange={e => {
               setPid(e.target.value)
