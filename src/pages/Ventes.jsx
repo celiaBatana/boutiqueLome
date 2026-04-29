@@ -63,7 +63,6 @@ export default function Ventes() {
       }
       setPid('')
       setProdSearch('')
-      setDate(today())
     } catch (e) { alert('Erreur : ' + e.message) }
     setSaving(false)
   }
