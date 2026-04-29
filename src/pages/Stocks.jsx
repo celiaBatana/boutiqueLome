@@ -52,7 +52,7 @@ function EditableCell({ value, color, isCurrency = false, onSave }) {
 }
 
 function ModalAddProduit({ onClose, onSave }) {
-  const [form, setForm] = useState({ nom: '', cat: 'Boissons', stock: 3, seuil: 1, prix: 700 })
+  const [form, setForm] = useState({ nom: '', cat: 'Boissons', stock: 3, seuil: 1, prix: 0 })
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
   return (
     <div className="overlay open">
@@ -185,7 +185,7 @@ export default function Stocks() {
               <tr>
                 <th>Produit</th>
                 <th>Catégorie</th>
-                <th>Stock</th>
+                <th>Stock / Solde</th>
                 <th>Seuil alerte</th>
                 <th>Prix vente</th>
                 <th>État</th>
@@ -196,6 +196,7 @@ export default function Stocks() {
               {produits.length === 0
                 ? <tr><td colSpan={7}><Empty icon="📦" text='Aucun produit. Cliquez sur "Nouveau produit"' /></td></tr>
                 : produits.map(p => {
+                  const credit = p.cat === 'Crédit téléphonique'
                   const col = p.stock === 0 ? 'var(--coral)' : p.stock <= p.seuil ? 'var(--gold)' : 'var(--em)'
                   const badge = p.stock === 0
                     ? <span className="badge b-red">Épuisé</span>
@@ -204,19 +205,30 @@ export default function Stocks() {
                       : <span className="badge b-green">✓ OK</span>
                   return (
                     <tr key={p.id}>
-                      <td><strong>{p.nom}</strong></td>
+                      <td>
+                        <strong>{p.nom}</strong>
+                        {credit && <span style={{ marginLeft: 6 }}>📱</span>}
+                      </td>
                       <td><span className="badge b-light">{p.cat}</span></td>
 
-                      {/* Stock éditable */}
+                      {/* Stock / Solde éditable */}
                       <td style={{ minWidth: 150 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <EditableCell
                             value={p.stock} color={col}
+                            isCurrency={credit}
                             onSave={v => handleUpdate(p.id, 'stock', v)}
                           />
-                          <div style={{ flex: 1 }}>
-                            <ProgBar value={p.stock} max={Math.max(p.seuil * 3, 1)} color={col} />
-                          </div>
+                          {!credit && (
+                            <div style={{ flex: 1 }}>
+                              <ProgBar value={p.stock} max={Math.max(p.seuil * 3, 1)} color={col} />
+                            </div>
+                          )}
+                          {credit && (
+                            <div style={{ flex: 1 }}>
+                              <ProgBar value={p.stock} max={Math.max(p.seuil * 3, 1)} color={col} />
+                            </div>
+                          )}
                         </div>
                       </td>
 
@@ -224,16 +236,17 @@ export default function Stocks() {
                       <td>
                         <EditableCell
                           value={p.seuil} color="var(--text2)"
+                          isCurrency={credit}
                           onSave={v => handleUpdate(p.id, 'seuil', v)}
                         />
                       </td>
 
-                      {/* Prix éditable */}
+                      {/* Prix éditable (masqué pour crédit) */}
                       <td>
-                        <EditableCell
-                          value={p.prix} isCurrency
-                          onSave={v => handleUpdate(p.id, 'prix', v)}
-                        />
+                        {credit
+                          ? <span style={{ color: 'var(--text3)', fontSize: 12 }}>—</span>
+                          : <EditableCell value={p.prix} isCurrency onSave={v => handleUpdate(p.id, 'prix', v)} />
+                        }
                       </td>
 
                       <td>{badge}</td>
