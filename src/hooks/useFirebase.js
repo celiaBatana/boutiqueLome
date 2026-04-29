@@ -13,12 +13,20 @@ export function useCollection(colName, orderField = 'createdAt') {
   useEffect(() => {
     const q = query(collection(db, colName), orderBy(orderField, 'desc'))
     const unsub = onSnapshot(q, (snap) => {
-      setData(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      let docs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      if (colName === 'boutique_produits') {
+        docs = docs.sort((a, b) => {
+          const catCmp = (a.cat || '').localeCompare(b.cat || '', 'fr')
+          if (catCmp !== 0) return catCmp
+          return (a.nom || '').localeCompare(b.nom || '', 'fr')
+        })
+      }
+      setData(docs)
       setLoading(false)
-    }, (err) => {
+  }, (err) => {
       console.error('Firebase error:', err)
       setLoading(false)
-    })
+  })
     return () => unsub()
   }, [colName])
 
