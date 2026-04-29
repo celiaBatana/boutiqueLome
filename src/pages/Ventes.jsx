@@ -13,6 +13,7 @@ export default function Ventes() {
   const [prix, setPrix]     = useState('')
   const [montant, setMontant] = useState('') // pour crédit
   const [date, setDate] = useState(today())
+  const [prodSearch, setProdSearch] = useState('')
   const [saving, setSaving] = useState(false)
 
   const t = today()
@@ -61,6 +62,7 @@ export default function Ventes() {
         setQty(1); setPrix('')
       }
       setPid('')
+      setProdSearch('')
       setDate(today())
     } catch (e) { alert('Erreur : ' + e.message) }
     setSaving(false)
