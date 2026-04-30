@@ -244,7 +244,7 @@ export default function Dashboard({ setPage }) {
       .map(([cat, d]) => ({ cat, ...d }))
       .sort((a, b) => b.total - a.total)
     
-    return { ts, ms, tvT, tvM, tdM, ben: tvM - tdM, caisse, report, low, top, days, top4, maxDay, m }
+return { ts, ms, tvT, tvM, tdM, ben: tvM - tdM, caisse, report, low, top, days, top4, maxDay, m, catStats }
   }, [ventes, depenses, produits, t, onglet, moisSel, getReport])
 
   if (lP || lV || lD) return <Spinner />
