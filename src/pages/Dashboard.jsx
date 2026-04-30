@@ -397,6 +397,38 @@ export default function Dashboard({ setPage }) {
 
             <StocksFaibles />
 
+            <SCard title="🗂 Revenus par catégorie">
+              {stats.catStats.length === 0
+                ? <Empty icon="📊" text="Aucune vente ce mois" />
+                : (() => {
+                  const max = Math.max(...stats.catStats.map(c => c.total), 1)
+                  return stats.catStats.map(({ cat, total, count }, i) => {
+                    const pct = Math.round(total / max * 100)
+                    const colors = ['var(--em)','var(--gold)','var(--sky)','var(--violet)','var(--coral)','#10b981','#f59e0b','#3b82f6']
+                    const col = colors[i % colors.length]
+                    return (
+                      <div key={cat} style={{ marginBottom: 14 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5, alignItems: 'center' }}>
+                          <span style={{ fontSize: 13, fontWeight: 600 }}>{cat}</span>
+                          <div style={{ textAlign: 'right' }}>
+                            <span style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 800, fontSize: 14, color: col }}>
+                              {fmt(total)} FCFA
+                            </span>
+                            <span style={{ fontSize: 10, color: 'var(--text3)', marginLeft: 6 }}>
+                              {count} vente{count > 1 ? 's' : ''}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="prog-track">
+                          <div className="prog-fill" style={{ width: pct + '%', background: col }} />
+                        </div>
+                      </div>
+                    )
+                  })
+                })()
+              }
+          </SCard>
+
             {/* Tableau paginé — prend toute la largeur */}
             <div style={{ gridColumn: '1 / -1' }}>
               <VentesMoisTable ventes={stats.ms} setPage={setPage} />
