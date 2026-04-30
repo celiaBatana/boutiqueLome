@@ -33,6 +33,30 @@ export function useCollection(colName, orderField = 'createdAt') {
   return { data, loading }
 }
 
+// ── Investissements ──
+export function useInvestissements() {
+  const { data, loading } = useCollection(COLLECTIONS.INVESTISSEMENTS, 'createdAt')
+
+  const addInvestissement = async (inv) => {
+    await addDoc(collection(db, COLLECTIONS.INVESTISSEMENTS), {
+      ...inv,
+      montant: Number(inv.montant) || 0,
+      rembourse: 0,
+      createdAt: serverTimestamp(),
+    })
+  }
+
+  const updateRembourse = async (id, montant) => {
+    await updateDoc(doc(db, COLLECTIONS.INVESTISSEMENTS, id), { rembourse: Number(montant) || 0 })
+  }
+
+  const deleteInvestissement = async (id) => {
+    await deleteDoc(doc(db, COLLECTIONS.INVESTISSEMENTS, id))
+  }
+
+  return { investissements: data, loading, addInvestissement, updateRembourse, deleteInvestissement }
+}
+
 // ── Produits ──
 export function useProduits() {
   const { data, loading } = useCollection(COLLECTIONS.PRODUITS, 'nom')
