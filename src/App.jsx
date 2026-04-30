@@ -13,6 +13,7 @@ const PAGES = {
   stocks:     Stocks,
   depenses:   Depenses,
   historique: Historique,
+  investissements: Investissements,
 }
 
 export default function App() {
