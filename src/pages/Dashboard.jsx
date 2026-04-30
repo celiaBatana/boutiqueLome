@@ -3,6 +3,8 @@ import { useProduits, useVentes, useDepenses, useCaisse } from '../hooks/useFire
 import { StatCard, SCard, Spinner, Empty, ProgBar, BarChart } from '../components/UI'
 import { fmt, today, currentMonth, monthKey, fmtMonth } from '../lib/utils'
 
+const PAGE_SIZE = 15
+
 // ── Heatmap ──
 function Heatmap({ days, top4, maxDay }) {
   return (
@@ -46,7 +48,7 @@ function Heatmap({ days, top4, maxDay }) {
   )
 }
 
-// ── ReportBlock — DOIT être en dehors de Dashboard pour garder son state ──
+// ── ReportBlock ──
 function ReportBlock({ m, getReport, setReport, caisse }) {
   const [editing, setEditing] = useState(false)
   const [val, setVal]         = useState('')
@@ -77,9 +79,7 @@ function ReportBlock({ m, getReport, setReport, caisse }) {
               onClick={async () => { await setReport(m, val); setEditing(false) }}>
               ✔ Enregistrer
             </button>
-            <button className="btn btn-outline btn-sm" onClick={() => setEditing(false)}>
-              Annuler
-            </button>
+            <button className="btn btn-outline btn-sm" onClick={() => setEditing(false)}>Annuler</button>
           </div>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -88,11 +88,7 @@ function ReportBlock({ m, getReport, setReport, caisse }) {
             </span>
             <button
               onClick={() => { setVal(rep); setEditing(true) }}
-              style={{
-                background: 'rgba(240,165,0,.15)', color: '#8a5c00',
-                border: '1px solid rgba(240,165,0,.3)', borderRadius: 7,
-                padding: '4px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer'
-              }}
+              style={{ background: 'rgba(240,165,0,.15)', color: '#8a5c00', border: '1px solid rgba(240,165,0,.3)', borderRadius: 7, padding: '4px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
             >
               ✏️ Modifier
             </button>
@@ -101,9 +97,7 @@ function ReportBlock({ m, getReport, setReport, caisse }) {
       </div>
       {rep > 0 && (
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 10, color: '#8a5c00', fontWeight: 600, textTransform: 'uppercase', marginBottom: 2 }}>
-            Caisse totale
-          </div>
+          <div style={{ fontSize: 10, color: '#8a5c00', fontWeight: 600, textTransform: 'uppercase', marginBottom: 2 }}>Caisse totale</div>
           <div style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 20, color: caisse >= 0 ? 'var(--em-d)' : 'var(--coral)' }}>
             {fmt(caisse)} FCFA
           </div>
@@ -111,6 +105,82 @@ function ReportBlock({ m, getReport, setReport, caisse }) {
         </div>
       )}
     </div>
+  )
+}
+
+// ── Tableau ventes paginé ──
+function VentesMoisTable({ ventes, setPage: setAppPage }) {
+  const [page, setPage] = useState(1)
+  const sorted = useMemo(() =>
+    ventes.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+  , [ventes])
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
+  const slice = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  const btnPage = (active) => ({
+    padding: '4px 10px', borderRadius: 7, border: 'none', cursor: 'pointer',
+    fontFamily: 'Lexend,sans-serif', fontSize: 12, fontWeight: 600,
+    background: active ? 'var(--em)' : 'var(--bg)',
+    color: active ? '#fff' : 'var(--text2)',
+    border: active ? 'none' : '1.5px solid var(--border)',
+    transition: 'all .15s',
+  })
+
+  return (
+    <SCard
+      title="🧾 Toutes les ventes du mois"
+      action={<button className="btn btn-outline btn-sm" onClick={() => setAppPage('ventes')}>Gérer →</button>}
+    >
+      <div className="tw">
+        <table>
+          <thead><tr><th>Date</th><th>Produit</th><th>Total</th></tr></thead>
+          <tbody>
+            {slice.length === 0
+              ? <tr><td colSpan={3}><Empty icon="🛒" text="Aucune vente ce mois" /></td></tr>
+              : slice.map(v => (
+                <tr key={v.id}>
+                  <td style={{ color: 'var(--text3)', fontSize: 11, whiteSpace: 'nowrap' }}>
+                    {v.date.slice(8,10)}/{v.date.slice(5,7)}
+                  </td>
+                  <td>
+                    <strong>{v.prodNom}</strong>
+                    {v.typeCredit && <span className="badge b-sky" style={{ marginLeft: 6, fontSize: 9 }}>📱</span>}
+                  </td>
+                  <td><span style={{ color: 'var(--em)', fontWeight: 700 }}>{fmt(v.total)} FCFA</span></td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
+          <span style={{ fontSize: 11, color: 'var(--text3)' }}>
+            {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, sorted.length)} sur {sorted.length} ventes
+          </span>
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            <button
+              style={btnPage(false)}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >← Préc.</button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+              <button key={p} style={btnPage(p === page)} onClick={() => setPage(p)}>
+                {p}
+              </button>
+            ))}
+            <button
+              style={btnPage(false)}
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+            >Suiv. →</button>
+          </div>
+        </div>
+      )}
+    </SCard>
   )
 }
 
@@ -125,13 +195,11 @@ export default function Dashboard({ setPage }) {
   const [onglet, setOnglet]   = useState('today')
   const [moisSel, setMoisSel] = useState(currentMonth())
 
-  // Mois disponibles
   const moisDispos = useMemo(() => {
     const s = new Set([...ventes.map(v => monthKey(v.date)), currentMonth()])
     return [...s].filter(Boolean).sort().reverse()
   }, [ventes])
 
-  // Stats calculées
   const stats = useMemo(() => {
     const m = onglet === 'today' ? currentMonth() : moisSel
     const ts  = ventes.filter(v => v.date === t)
@@ -248,12 +316,7 @@ export default function Dashboard({ setPage }) {
       {/* ══ ONGLET AUJOURD'HUI ══ */}
       {onglet === 'today' && (
         <>
-          <ReportBlock
-            m={currentMonth()}
-            getReport={getReport}
-            setReport={setReport}
-            caisse={stats.caisse}
-          />
+          <ReportBlock m={currentMonth()} getReport={getReport} setReport={setReport} caisse={stats.caisse} />
 
           <div className="stat-grid">
             <StatCard colorClass="c0" icon="💰" label="Ventes aujourd'hui"
@@ -307,12 +370,7 @@ export default function Dashboard({ setPage }) {
       {/* ══ ONGLET PAR MOIS ══ */}
       {onglet === 'mois' && (
         <>
-          <ReportBlock
-            m={moisSel}
-            getReport={getReport}
-            setReport={setReport}
-            caisse={stats.caisse}
-          />
+          <ReportBlock m={moisSel} getReport={getReport} setReport={setReport} caisse={stats.caisse} />
 
           <div className="stat-grid">
             <StatCard colorClass="c0" icon="💰" label="Revenus"
@@ -339,31 +397,10 @@ export default function Dashboard({ setPage }) {
 
             <StocksFaibles />
 
-            <SCard title="🧾 Toutes les ventes du mois"
-              action={<button className="btn btn-outline btn-sm" onClick={() => setPage('ventes')}>Gérer →</button>}>
-              <div className="tw">
-                <table>
-                  <thead><tr><th>Date</th><th>Produit</th><th>Total</th></tr></thead>
-                  <tbody>
-                    {stats.ms.length === 0
-                      ? <tr><td colSpan={3}><Empty icon="🛒" text="Aucune vente ce mois" /></td></tr>
-                      : stats.ms.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(v => (
-                        <tr key={v.id}>
-                          <td style={{ color: 'var(--text3)', fontSize: 11, whiteSpace: 'nowrap' }}>
-                            {v.date.slice(8, 10)}/{v.date.slice(5, 7)}
-                          </td>
-                          <td>
-                            <strong>{v.prodNom}</strong>
-                            {v.typeCredit && <span className="badge b-sky" style={{ marginLeft: 6, fontSize: 9 }}>📱</span>}
-                          </td>
-                          <td><span style={{ color: 'var(--em)', fontWeight: 700 }}>{fmt(v.total)} FCFA</span></td>
-                        </tr>
-                      ))
-                    }
-                  </tbody>
-                </table>
-              </div>
-            </SCard>
+            {/* Tableau paginé — prend toute la largeur */}
+            <div style={{ gridColumn: '1 / -1' }}>
+              <VentesMoisTable ventes={stats.ms} setPage={setPage} />
+            </div>
           </div>
         </>
       )}
