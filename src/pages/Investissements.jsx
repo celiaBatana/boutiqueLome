@@ -222,34 +222,36 @@ export default function Investissements() {
   )
 }
 
-// ── Cellule remboursé éditable ──
 function RembourseCell({ value, max, onSave }) {
   const [editing, setEditing] = useState(false)
-  const [val, setVal]         = useState(value)
+  const [val, setVal]         = useState('')
 
   const commit = () => {
     setEditing(false)
-    const n = Math.min(Number(val) || 0, max)
-    if (n !== value) onSave(n)
+    const ajout = Number(val) || 0
+    if (ajout <= 0) return
+    const nouveau = Math.min(value + ajout, max)
+    onSave(nouveau)
   }
 
   if (editing) {
     return (
       <input
         type="number" value={val} autoFocus
-        min={0} max={max}
+        min={0} max={max - value}
         onChange={e => setVal(e.target.value)}
         onBlur={commit}
         onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
-        style={{ width: 90, padding: '4px 8px', borderRadius: 7, border: '1.5px solid var(--em)', background: '#fff', fontFamily: 'Lexend,sans-serif', fontSize: 13, outline: 'none' }}
+        placeholder={`max ${fmt(max - value)}`}
+        style={{ width: 100, padding: '4px 8px', borderRadius: 7, border: '1.5px solid var(--em)', background: '#fff', fontFamily: 'Lexend,sans-serif', fontSize: 13, outline: 'none' }}
       />
     )
   }
 
   return (
     <span
-      onClick={() => { setVal(value); setEditing(true) }}
-      title="Cliquer pour modifier"
+      onClick={() => { setVal(''); setEditing(true) }}
+      title="Cliquer pour ajouter un remboursement"
       style={{
         cursor: 'pointer', fontWeight: 600,
         color: value >= max ? 'var(--em-d)' : value > 0 ? 'var(--text2)' : 'var(--text3)',
@@ -259,4 +261,5 @@ function RembourseCell({ value, max, onSave }) {
       {value > 0 ? fmt(value) + ' FCFA' : '—'}
     </span>
   )
+}
 }
