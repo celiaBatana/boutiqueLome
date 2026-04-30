@@ -5,6 +5,7 @@ import Ventes from './pages/Ventes'
 import Stocks from './pages/Stocks'
 import Depenses from './pages/Depenses'
 import Historique from './pages/Historique'
+import Investissements from './pages/Investissements'
 
 const PAGES = {
   dashboard:  Dashboard,
