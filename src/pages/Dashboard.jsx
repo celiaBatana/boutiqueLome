@@ -231,6 +231,19 @@ export default function Dashboard({ setPage }) {
     const maxDay = Math.max(...days.map(d => d.total), 1)
     const top4 = [...days].sort((a, b) => b.total - a.total).slice(0, 4).map(d => d.day)
 
+    // Revenus par catégorie
+    const catStatsMap = {}
+    ms.forEach(v => {
+      const cat = v.typeCredit ? 'Crédit téléphonique'
+        : (produits.find(p => p.id === v.prodId)?.cat || 'Autre')
+      if (!catStatsMap[cat]) catStatsMap[cat] = { total: 0, count: 0 }
+      catStatsMap[cat].total += v.total || 0
+      catStatsMap[cat].count += 1
+    })
+    const catStats = Object.entries(catStatsMap)
+      .map(([cat, d]) => ({ cat, ...d }))
+      .sort((a, b) => b.total - a.total)
+    
     return { ts, ms, tvT, tvM, tdM, ben: tvM - tdM, caisse, report, low, top, days, top4, maxDay, m }
   }, [ventes, depenses, produits, t, onglet, moisSel, getReport])
 
