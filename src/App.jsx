@@ -6,6 +6,7 @@ import Stocks from './pages/Stocks'
 import Depenses from './pages/Depenses'
 import Historique from './pages/Historique'
 import Investissements from './pages/Investissements'
+import Marges from './pages/Marges'
 
 const PAGES = {
   dashboard:  Dashboard,
@@ -14,6 +15,7 @@ const PAGES = {
   depenses:   Depenses,
   historique: Historique,
   investissements: Investissements,
+  marges: Marges,
 }
 
 export default function App() {
