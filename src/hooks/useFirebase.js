@@ -33,6 +33,36 @@ export function useCollection(colName, orderField = 'createdAt') {
   return { data, loading }
 }
 
+// ── Marges ──
+export function useMarges() {
+  const [marges, setMargesState] = useState({})
+  const [loading, setLoading] = useState(true)
+
+  const DEFAULT_MARGES = {
+    'Boissons': 40, 'Eau': 70, 'Biscuits': 20,
+    'Chaussures/Talons': 20, 'Sacs': 20, 'Vêtements': 20,
+    'Parfums': 20, 'Masques': 20, 'Déodorants': 20,
+    'Mouchoirs': 20, 'Crédit téléphonique': 0, 'Autre': 20,
+  }
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, COLLECTIONS.MARGES), (snap) => {
+      const data = { ...DEFAULT_MARGES }
+      snap.docs.forEach(d => { data[d.id] = d.data().pct ?? data[d.id] ?? 20 })
+      setMargesState(data)
+      setLoading(false)
+    })
+    return () => unsub()
+  }, [])
+
+  const setMarge = async (cat, pct) => {
+    const { setDoc } = await import('firebase/firestore')
+    await setDoc(doc(db, COLLECTIONS.MARGES, cat), { pct: Number(pct) || 0 })
+  }
+
+  return { marges, loading, setMarge, DEFAULT_MARGES }
+}
+
 // ── Investissements ──
 export function useInvestissements() {
   const { data, loading } = useCollection(COLLECTIONS.INVESTISSEMENTS, 'createdAt')
