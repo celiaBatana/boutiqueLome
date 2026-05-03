@@ -1,13 +1,14 @@
 import { useState } from 'react'
-import { useMarges, useVentes } from '../hooks/useFirebase'
+import { useMarges, useVentes, useProduits } from '../hooks/useFirebase'
 import { SCard, Spinner } from '../components/UI'
 import { fmt, currentMonth, fmtMonth, monthKey } from '../lib/utils'
 import { CAT_PRODUITS } from '../lib/utils'
 
 export default function Marges() {
-  const { marges, loading, setMarge } = useMarges()
-  const { ventes } = useVentes()
-
+ const { marges, loading, setMarge } = useMarges()
+ const { ventes } = useVentes()
+ const { produits } = useProduits()
+  
   const [moisSel, setMoisSel] = useState(currentMonth())
 
   const moisDispos = [...new Set([
@@ -20,7 +21,8 @@ export default function Marges() {
 
   const catRevMap = {}
   ms.forEach(v => {
-    const cat = v.typeCredit ? 'Crédit téléphonique' : (v.prodCat || 'Autre')
+  const cat = v.typeCredit ? 'Crédit téléphonique'
+    : (produits.find(p => p.id === v.prodId)?.cat || v.prodCat || 'Autre')
     if (!catRevMap[cat]) catRevMap[cat] = 0
     catRevMap[cat] += v.total || 0
   })
