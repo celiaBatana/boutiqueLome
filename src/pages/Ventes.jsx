@@ -76,12 +76,12 @@ export default function Ventes() {
         if (!mont || mont <= 0) return alert('Entrez un montant valide.')
         if (mont > p.stock) return alert(`Solde insuffisant ! Solde : ${fmt(p.stock)} FCFA`)
         await updateDoc(doc(db, COLLECTIONS.PRODUITS, pid), { stock: p.stock - mont })
-        await addVente({ date: selectedDate, heure: nowTime(), prodId: pid, prodNom: p.nom, qty: mont, prix: 1, total: mont, typeCredit: true })
+        await addVente({ date: selectedDate, heure: nowTime(), prodId: pid, prodNom: p.nom, prodCat: p.cat, qty: mont, prix: 1, total: mont, typeCredit: true })
         setMontant('')
       } else {
         if (qty > p.stock) return alert('Stock insuffisant ! Restant : ' + p.stock)
         await updateDoc(doc(db, COLLECTIONS.PRODUITS, pid), { stock: p.stock - qty })
-        await addVente({ date: selectedDate, heure: nowTime(), prodId: pid, prodNom: p.nom, qty: Number(qty), prix: Number(prix), total: Number(qty) * Number(prix), typeCredit: false })
+        await addVente({ date: selectedDate, heure: nowTime(), prodId: pid, prodNom: p.nom, prodCat: p.cat, qty: Number(qty), prix: Number(prix), total: Number(qty) * Number(prix), typeCredit: false })
         setQty(1); setPrix('')
       }
       setPid(''); setProdSearch('')
