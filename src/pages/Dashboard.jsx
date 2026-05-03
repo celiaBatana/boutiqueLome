@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useProduits, useVentes, useDepenses, useCaisse } from '../hooks/useFirebase'
+import { useProduits, useVentes, useDepenses, useCaisse, useMarges } from '../hooks/useFirebase'
 import { StatCard, SCard, Spinner, Empty, ProgBar, BarChart } from '../components/UI'
 import { fmt, today, currentMonth, monthKey, fmtMonth } from '../lib/utils'
 
@@ -119,7 +119,7 @@ function VentesMoisTable({ ventes, setPage: setAppPage }) {
   const slice = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const btnPage = (active) => ({
-    padding: '4px 10px', borderRadius: 7, border: 'none', cursor: 'pointer',
+    padding: '4px 10px', borderRadius: 7, cursor: 'pointer',
     fontFamily: 'Lexend,sans-serif', fontSize: 12, fontWeight: 600,
     background: active ? 'var(--em)' : 'var(--bg)',
     color: active ? '#fff' : 'var(--text2)',
@@ -154,29 +154,17 @@ function VentesMoisTable({ ventes, setPage: setAppPage }) {
           </tbody>
         </table>
       </div>
-
-      {/* Pagination */}
       {totalPages > 1 && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
           <span style={{ fontSize: 11, color: 'var(--text3)' }}>
             {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, sorted.length)} sur {sorted.length} ventes
           </span>
           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-            <button
-              style={btnPage(false)}
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-            >← Préc.</button>
+            <button style={btnPage(false)} onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>← Préc.</button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-              <button key={p} style={btnPage(p === page)} onClick={() => setPage(p)}>
-                {p}
-              </button>
+              <button key={p} style={btnPage(p === page)} onClick={() => setPage(p)}>{p}</button>
             ))}
-            <button
-              style={btnPage(false)}
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-            >Suiv. →</button>
+            <button style={btnPage(false)} onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Suiv. →</button>
           </div>
         </div>
       )}
@@ -190,6 +178,7 @@ export default function Dashboard({ setPage }) {
   const { ventes,   loading: lV } = useVentes()
   const { depenses, loading: lD } = useDepenses()
   const { getReport, setReport }  = useCaisse()
+  const { marges }                = useMarges()
 
   const t = today()
   const [onglet, setOnglet]   = useState('today')
@@ -235,7 +224,7 @@ export default function Dashboard({ setPage }) {
     const catStatsMap = {}
     ms.forEach(v => {
       const cat = v.typeCredit ? 'Crédit téléphonique'
-        : (produits.find(p => p.id === v.prodId)?.cat || 'Autre')
+        : (produits.find(p => p.id === v.prodId)?.cat || v.prodCat || 'Autre')
       if (!catStatsMap[cat]) catStatsMap[cat] = { total: 0, count: 0 }
       catStatsMap[cat].total += v.total || 0
       catStatsMap[cat].count += 1
@@ -243,9 +232,19 @@ export default function Dashboard({ setPage }) {
     const catStats = Object.entries(catStatsMap)
       .map(([cat, d]) => ({ cat, ...d }))
       .sort((a, b) => b.total - a.total)
-    
-return { ts, ms, tvT, tvM, tdM, ben: tvM - tdM, caisse, report, low, top, days, top4, maxDay, m, catStats }
-  }, [ventes, depenses, produits, t, onglet, moisSel, getReport])
+
+    // Bénéfice estimé via marges
+    const benEstime = Math.round(
+      ms.reduce((a, v) => {
+        const cat = v.typeCredit ? 'Crédit téléphonique'
+          : (produits.find(p => p.id === v.prodId)?.cat || v.prodCat || 'Autre')
+        const pct = (marges?.[cat] ?? 20) / 100
+        return a + (v.total || 0) * pct
+      }, 0)
+    )
+
+    return { ts, ms, tvT, tvM, tdM, ben: tvM - tdM, caisse, report, low, top, days, top4, maxDay, m, catStats, benEstime }
+  }, [ventes, depenses, produits, t, onglet, moisSel, getReport, marges])
 
   if (lP || lV || lD) return <Spinner />
 
@@ -279,6 +278,40 @@ return { ts, ms, tvT, tvM, tdM, ben: tvM - tdM, caisse, report, low, top, days, 
             </div>
           )
         })
+      }
+    </SCard>
+  )
+
+  const CatStats = () => (
+    <SCard title="🗂 Revenus par catégorie">
+      {stats.catStats.length === 0
+        ? <Empty icon="📊" text="Aucune vente ce mois" />
+        : (() => {
+          const max = Math.max(...stats.catStats.map(c => c.total), 1)
+          return stats.catStats.map(({ cat, total, count }, i) => {
+            const pct = Math.round(total / max * 100)
+            const colors = ['var(--em)','var(--gold)','var(--sky)','var(--violet)','var(--coral)','#10b981','#f59e0b','#3b82f6']
+            const col = colors[i % colors.length]
+            return (
+              <div key={cat} style={{ marginBottom: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5, alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>{cat}</span>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 800, fontSize: 14, color: col }}>
+                      {fmt(total)} FCFA
+                    </span>
+                    <span style={{ fontSize: 10, color: 'var(--text3)', marginLeft: 6 }}>
+                      {count} vente{count > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                </div>
+                <div className="prog-track">
+                  <div className="prog-fill" style={{ width: pct + '%', background: col }} />
+                </div>
+              </div>
+            )
+          })
+        })()
       }
     </SCard>
   )
@@ -341,8 +374,9 @@ return { ts, ms, tvT, tvM, tdM, ben: tvM - tdM, caisse, report, low, top, days, 
             <StatCard colorClass="c3" icon="💼" label="Caisse"
               value={fmt(stats.caisse)}
               sub={stats.report > 0 ? `dont report ${fmt(stats.report)} FCFA` : 'FCFA ce mois'} />
-            <StatCard colorClass="c4" icon="📦" label="Produits"
-              value={produits.length} sub={`${stats.low.length} alerte${stats.low.length > 1 ? 's' : ''}`} />
+            <StatCard colorClass="c4" icon="💹" label="Bénéfice estimé"
+              value={fmt(stats.benEstime)}
+              sub={`FCFA · ${stats.tvM > 0 ? Math.round(stats.benEstime / stats.tvM * 100) : 0}% de marge`} />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }} className="two-col">
@@ -393,10 +427,11 @@ return { ts, ms, tvT, tvM, tdM, ben: tvM - tdM, caisse, report, low, top, days, 
             <StatCard colorClass="c3" icon="💼" label="Caisse"
               value={fmt(stats.caisse)}
               sub={stats.report > 0 ? `dont report ${fmt(stats.report)} FCFA` : 'FCFA'} />
-            <StatCard colorClass="c4" icon="🛒" label="Nb ventes"
+            <StatCard colorClass="c4" icon="💹" label="Bénéfice estimé"
+              value={fmt(stats.benEstime)}
+              sub={`FCFA · ${stats.tvM > 0 ? Math.round(stats.benEstime / stats.tvM * 100) : 0}% de marge`} />
+            <StatCard colorClass="c1" icon="🛒" label="Nb ventes"
               value={stats.ms.length} sub="transactions" />
-            <StatCard colorClass="c1" icon="📦" label="Stocks faibles"
-              value={stats.low.length} sub="alerte(s)" />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }} className="two-col">
@@ -410,39 +445,9 @@ return { ts, ms, tvT, tvM, tdM, ben: tvM - tdM, caisse, report, low, top, days, 
 
             <StocksFaibles />
 
-            <SCard title="🗂 Revenus par catégorie">
-              {stats.catStats.length === 0
-                ? <Empty icon="📊" text="Aucune vente ce mois" />
-                : (() => {
-                  const max = Math.max(...stats.catStats.map(c => c.total), 1)
-                  return stats.catStats.map(({ cat, total, count }, i) => {
-                    const pct = Math.round(total / max * 100)
-                    const colors = ['var(--em)','var(--gold)','var(--sky)','var(--violet)','var(--coral)','#10b981','#f59e0b','#3b82f6']
-                    const col = colors[i % colors.length]
-                    return (
-                      <div key={cat} style={{ marginBottom: 14 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5, alignItems: 'center' }}>
-                          <span style={{ fontSize: 13, fontWeight: 600 }}>{cat}</span>
-                          <div style={{ textAlign: 'right' }}>
-                            <span style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 800, fontSize: 14, color: col }}>
-                              {fmt(total)} FCFA
-                            </span>
-                            <span style={{ fontSize: 10, color: 'var(--text3)', marginLeft: 6 }}>
-                              {count} vente{count > 1 ? 's' : ''}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="prog-track">
-                          <div className="prog-fill" style={{ width: pct + '%', background: col }} />
-                        </div>
-                      </div>
-                    )
-                  })
-                })()
-              }
-          </SCard>
+            <CatStats />
 
-            {/* Tableau paginé — prend toute la largeur */}
+            {/* Tableau paginé — pleine largeur */}
             <div style={{ gridColumn: '1 / -1' }}>
               <VentesMoisTable ventes={stats.ms} setPage={setPage} />
             </div>
