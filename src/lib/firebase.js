@@ -24,4 +24,5 @@ export const COLLECTIONS = {
   CAISSE:    'boutique_caisse',
   INVESTISSEMENTS: 'boutique_investissements',
   MARGES: 'boutique_marges',
+  NOTES: 'boutique_notes',
 }
