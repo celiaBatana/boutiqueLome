@@ -33,6 +33,29 @@ export function useCollection(colName, orderField = 'createdAt') {
   return { data, loading }
 }
 
+export function useNotes() {
+  const [notes, setNotesState] = useState({})
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, COLLECTIONS.NOTES), snap => {
+      const data = {}
+      snap.docs.forEach(d => { data[d.id] = d.data().texte || '' })
+      setNotesState(data)
+    })
+    return () => unsub()
+  }, [])
+
+  const setNote = async (date, texte) => {
+    const { setDoc } = await import('firebase/firestore')
+    await setDoc(doc(db, COLLECTIONS.NOTES, date), { texte })
+  }
+  const deleteNote = async (date) => {
+    const { deleteDoc } = await import('firebase/firestore')
+    await deleteDoc(doc(db, COLLECTIONS.NOTES, date))
+  }
+  return { notes, setNote, deleteNote }
+}
+
 // ── Marges ──
 export function useMarges() {
   const [marges, setMargesState] = useState({})
