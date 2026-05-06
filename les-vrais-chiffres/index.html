@@ -6,7 +6,7 @@
   <title>Les Vrais Chiffres — Faits & Sources Officielles</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -17,8 +17,8 @@
       --muted: #6B6860;
       --subtle: #A09E98;
       --gold: #E5C100;
-      --font-d: 'Syne', sans-serif;
-      --font-b: 'DM Sans', sans-serif;
+      --font-d: 'Barlow Condensed', sans-serif;
+      --font-b: 'Space Grotesk', sans-serif;
       --r: 8px;
     }
     body { font-family: var(--font-b); background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; min-height: 100vh; }
@@ -27,8 +27,8 @@
     .site-header { background: var(--text); color: white; position: sticky; top: 0; z-index: 100; border-bottom: 3px solid var(--gold); }
     .header-inner { max-width: 1200px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
     .logo { display: flex; align-items: center; gap: 10px; }
-    .logo-mark { background: var(--gold); color: var(--text); width: 32px; height: 32px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-family: var(--font-d); font-weight: 800; font-size: 18px; flex-shrink: 0; }
-    .logo-text { font-family: var(--font-d); font-weight: 800; font-size: 20px; letter-spacing: -0.02em; }
+    .logo-mark { background: var(--gold); color: var(--text); width: 32px; height: 32px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px; flex-shrink: 0; }
+    .logo-text { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 22px; letter-spacing: 0.06em; text-transform: uppercase; }
     .header-tagline { font-size: 12px; color: rgba(255,255,255,0.5); letter-spacing: 0.04em; text-align: right; }
 
     /* LAYOUT */
@@ -56,15 +56,15 @@
 
     .theme-panel-header { border-left: 4px solid; padding: 20px 24px; background: white; border-radius: 0 var(--r) var(--r) 0; display: flex; align-items: flex-start; gap: 16px; margin-bottom: 24px; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
     .theme-icon { font-size: 28px; line-height: 1; flex-shrink: 0; margin-top: 2px; }
-    .theme-title { font-family: var(--font-d); font-size: 26px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 6px; }
-    .theme-resume { font-size: 14px; color: var(--muted); line-height: 1.4; }
+    .theme-title { font-family: 'Barlow Condensed', sans-serif; font-size: 34px; font-weight: 800; letter-spacing: 0.01em; line-height: 1; margin-bottom: 6px; text-transform: uppercase; }
+    .theme-resume { font-size: 14px; color: var(--muted); line-height: 1.4; font-family: 'Space Grotesk', sans-serif; }
 
     /* STATS */
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 28px; }
     .stat-card { background: white; border: 1px solid var(--border); border-radius: var(--r); padding: 16px; }
-    .stat-value { font-family: var(--font-d); font-size: 28px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; margin-bottom: 6px; }
-    .stat-label { font-size: 12px; color: var(--muted); line-height: 1.5; margin-bottom: 8px; }
-    .stat-source { font-size: 10px; color: var(--subtle); letter-spacing: 0.03em; padding-top: 8px; border-top: 1px solid var(--border); }
+    .stat-value { font-family: 'Barlow Condensed', sans-serif; font-size: 42px; font-weight: 700; letter-spacing: -0.01em; line-height: 1; margin-bottom: 8px; }
+    .stat-label { font-size: 12px; color: var(--muted); line-height: 1.5; margin-bottom: 8px; font-family: 'Space Grotesk', sans-serif; font-weight: 400; }
+    .stat-source { font-size: 10px; color: var(--subtle); letter-spacing: 0.03em; padding-top: 8px; border-top: 1px solid var(--border); font-family: 'Inter', sans-serif; }
 
     /* BAR CHART */
     .bar-chart { background: white; border: 1px solid var(--border); border-radius: var(--r); padding: 20px; margin-bottom: 28px; }
