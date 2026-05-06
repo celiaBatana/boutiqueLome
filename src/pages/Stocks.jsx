@@ -3,7 +3,7 @@ import { useProduits, useDepenses, useReappros } from '../hooks/useFirebase'
 import { SCard, Spinner, Empty, ProgBar, Field } from '../components/UI'
 import { fmt, today, CAT_PRODUITS } from '../lib/utils'
 
-const PAGE_R = 5
+const PAGE_R = 15
 
 // ── Cellule éditable inline ──
 function EditableCell({ value, color, isCurrency = false, onSave }) {
