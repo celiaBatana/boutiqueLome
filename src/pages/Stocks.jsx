@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useProduits, useDepenses } from '../hooks/useFirebase'
+import { useState, useMemo } from 'react'
+import { useProduits, useDepenses, useReappros } from '../hooks/useFirebase'
 import { SCard, Spinner, Empty, ProgBar, Field } from '../components/UI'
 import { fmt, today, CAT_PRODUITS } from '../lib/utils'
 
@@ -17,35 +17,18 @@ function EditableCell({ value, color, isCurrency = false, onSave }) {
   if (editing) {
     return (
       <input
-        type="number"
-        value={val}
-        autoFocus
+        type="number" value={val} autoFocus
         onChange={e => setVal(e.target.value)}
         onBlur={commit}
         onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
-        style={{
-          width: 90, padding: '4px 8px', borderRadius: 7,
-          border: '1.5px solid var(--em)', background: '#fff',
-          fontFamily: 'Lexend,sans-serif', fontSize: 13,
-          color: 'var(--text)', outline: 'none',
-        }}
+        style={{ width: 90, padding: '4px 8px', borderRadius: 7, border: '1.5px solid var(--em)', background: '#fff', fontFamily: 'Lexend,sans-serif', fontSize: 13, color: 'var(--text)', outline: 'none' }}
       />
     )
   }
 
   return (
-    <span
-      onClick={() => { setVal(value); setEditing(true) }}
-      title="Cliquer pour modifier"
-      style={{
-        cursor: 'pointer',
-        color: color || 'var(--text)',
-        fontWeight: 700,
-        fontSize: 15,
-        borderBottom: '1.5px dashed var(--border)',
-        paddingBottom: 1,
-      }}
-    >
+    <span onClick={() => { setVal(value); setEditing(true) }} title="Cliquer pour modifier"
+      style={{ cursor: 'pointer', color: color || 'var(--text)', fontWeight: 700, fontSize: 15, borderBottom: '1.5px dashed var(--border)', paddingBottom: 1 }}>
       {isCurrency ? fmt(value) + ' FCFA' : value}
     </span>
   )
@@ -93,9 +76,9 @@ function ModalAddProduit({ onClose, onSave }) {
 }
 
 function ModalReappro({ produits, onClose, onSave }) {
-  const [pid, setPid]   = useState('')
-  const [qty, setQty]   = useState(1)
-  const [cout, setCout] = useState('')
+  const [pid, setPid] = useState('')
+  const [qty, setQty] = useState(1)
+  const [date, setDate] = useState(today())
   return (
     <div className="overlay open">
       <div className="modal">
@@ -105,7 +88,10 @@ function ModalReappro({ produits, onClose, onSave }) {
           <button className="modal-x" onClick={onClose}>✕</button>
         </div>
         <div className="form-grid">
-          <Field label="Produit" style={{ gridColumn: '1/-1' }}>
+          <Field label="Date">
+            <input type="date" value={date} onChange={e => setDate(e.target.value)} />
+          </Field>
+          <Field label="Produit">
             <select value={pid} onChange={e => setPid(e.target.value)}>
               <option value="">— Choisir —</option>
               {produits.map(p => <option key={p.id} value={p.id}>{p.nom} (stock : {p.stock})</option>)}
@@ -114,14 +100,11 @@ function ModalReappro({ produits, onClose, onSave }) {
           <Field label="Quantité ajoutée">
             <input type="number" min="1" value={qty} onChange={e => setQty(+e.target.value)} />
           </Field>
-          <Field label="Coût total (FCFA)">
-            <input type="number" value={cout} onChange={e => setCout(e.target.value)} placeholder="0" />
-          </Field>
         </div>
         <div className="modal-foot">
           <button className="btn btn-gold" onClick={() => {
             if (!pid) return alert('Sélectionnez un produit.')
-            onSave({ pid, qty: Number(qty), cout: Number(cout) })
+            onSave({ pid, qty: Number(qty), date })
           }}>✔ Confirmer</button>
           <button className="btn btn-outline" onClick={onClose}>Annuler</button>
         </div>
@@ -132,29 +115,34 @@ function ModalReappro({ produits, onClose, onSave }) {
 
 export default function Stocks() {
   const { produits, loading, addProduit, updateProduit, deleteProduit } = useProduits()
-  const { addDepense } = useDepenses()
+  const { reappros, addReappro, deleteReappro } = useReappros()
   const [showAdd, setShowAdd]         = useState(false)
   const [showReappro, setShowReappro] = useState(false)
+
+  // Filtre historique réappros
+  const [filterProd, setFilterProd] = useState('tous')
+
+  const reapprosFiltered = useMemo(() => {
+    if (filterProd === 'tous') return reappros
+    return reappros.filter(r => r.prodId === filterProd)
+  }, [reappros, filterProd])
 
   const handleAddProduit = async (form) => {
     await addProduit(form)
     setShowAdd(false)
   }
 
-  const handleReappro = async ({ pid, qty, cout }) => {
+  const handleReappro = async ({ pid, qty, date }) => {
     const { db, COLLECTIONS } = await import('../lib/firebase')
     const { doc, updateDoc, getDoc } = await import('firebase/firestore')
     const ref = doc(db, COLLECTIONS.PRODUITS, pid)
     const snap = await getDoc(ref)
     if (!snap.exists()) return
     const p = { id: pid, ...snap.data() }
+    // Mise à jour du stock
     await updateDoc(ref, { stock: (p.stock || 0) + qty })
-    if (cout > 0) {
-      await addDepense({
-        date: today(), desc: `Réappro: ${p.nom} (×${qty})`,
-        cat: 'Réapprovisionnement', montant: cout,
-      })
-    }
+    // Enregistrement dans l'historique
+    await addReappro({ prodId: pid, prodNom: p.nom, prodCat: p.cat, qty, date })
     setShowReappro(false)
   }
 
@@ -178,7 +166,8 @@ export default function Stocks() {
         <span style={{ borderBottom: '1.5px dashed var(--text3)', margin: '0 3px' }}>prix</span> pour modifier directement
       </div>
 
-      <div className="scard" style={{ padding: 0, overflow: 'hidden' }}>
+      {/* ── Tableau des stocks ── */}
+      <div className="scard" style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>
         <div className="tw">
           <table>
             <thead>
@@ -210,17 +199,12 @@ export default function Stocks() {
                       <tr key={'cat-' + p.cat}>
                         <td colSpan={7} style={{
                           background: 'linear-gradient(90deg, var(--em-g), transparent)',
-                          padding: '8px 14px',
-                          fontFamily: 'Nunito,sans-serif',
-                          fontWeight: 800,
-                          fontSize: 11,
-                          color: 'var(--em-d)',
-                          textTransform: 'uppercase',
-                          letterSpacing: '.07em',
+                          padding: '8px 14px', fontFamily: 'Nunito,sans-serif',
+                          fontWeight: 800, fontSize: 11, color: 'var(--em-d)',
+                          textTransform: 'uppercase', letterSpacing: '.07em',
                           borderBottom: '1.5px solid var(--border)',
                         }}>
-                          {p.cat === 'Crédit téléphonique' ? '📱 ' : ''}
-                          {p.cat}
+                          {p.cat === 'Crédit téléphonique' ? '📱 ' : ''}{p.cat}
                         </td>
                       </tr>
                     ) : null
@@ -236,22 +220,16 @@ export default function Stocks() {
                         <td><span className="badge b-light">{p.cat}</span></td>
                         <td style={{ minWidth: 150 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <EditableCell
-                              value={p.stock} color={col}
-                              isCurrency={credit}
-                              onSave={v => handleUpdate(p.id, 'stock', v)}
-                            />
+                            <EditableCell value={p.stock} color={col} isCurrency={credit}
+                              onSave={v => handleUpdate(p.id, 'stock', v)} />
                             <div style={{ flex: 1 }}>
                               <ProgBar value={p.stock} max={Math.max(p.seuil * 3, 1)} color={col} />
                             </div>
                           </div>
                         </td>
                         <td>
-                          <EditableCell
-                            value={p.seuil} color="var(--text2)"
-                            isCurrency={credit}
-                            onSave={v => handleUpdate(p.id, 'seuil', v)}
-                          />
+                          <EditableCell value={p.seuil} color="var(--text2)" isCurrency={credit}
+                            onSave={v => handleUpdate(p.id, 'seuil', v)} />
                         </td>
                         <td>
                           {credit
@@ -262,15 +240,66 @@ export default function Stocks() {
                         <td>{badge}</td>
                         <td>
                           <button className="btn btn-del btn-xs"
-                            onClick={() => confirm('Supprimer ce produit ?') && deleteProduit(p.id)}>
-                            ✕
-                          </button>
+                            onClick={() => confirm('Supprimer ce produit ?') && deleteProduit(p.id)}>✕</button>
                         </td>
                       </tr>
                     ]
                   })
                 })()
               }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── Historique des réapprovisionnements ── */}
+      <div className="scard">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+          <div className="scard-title" style={{ flex: 1 }}>🔄 Historique des réapprovisionnements</div>
+          <select value={filterProd} onChange={e => setFilterProd(e.target.value)}
+            style={{ padding: '6px 30px 6px 12px', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg)', fontFamily: 'Lexend,sans-serif', fontSize: 13, color: 'var(--text)' }}>
+            <option value="tous">Tous les produits</option>
+            {produits.map(p => <option key={p.id} value={p.id}>{p.nom}</option>)}
+          </select>
+        </div>
+
+        <div className="tw">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Produit</th>
+                <th>Catégorie</th>
+                <th>Quantité ajoutée</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {reapprosFiltered.length === 0
+                ? <tr><td colSpan={5}><Empty icon="🔄" text="Aucun réapprovisionnement enregistré" /></td></tr>
+                : reapprosFiltered
+                  .slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+                  .map(r => (
+                    <tr key={r.id}>
+                      <td style={{ color: 'var(--text3)', whiteSpace: 'nowrap', fontSize: 12 }}>
+                        {r.date ? `${r.date.slice(8,10)}/${r.date.slice(5,7)}/${r.date.slice(0,4)}` : '—'}
+                      </td>
+                      <td><strong>{r.prodNom}</strong></td>
+                      <td><span className="badge b-light">{r.prodCat || '—'}</span></td>
+                      <td>
+                        <span style={{ color: 'var(--em)', fontWeight: 800, fontFamily: 'Nunito,sans-serif', fontSize: 15 }}>
+                          +{r.qty}
+                        </span>
+                      </td>
+                      <td>
+                        <button className="btn btn-del btn-xs"
+                          onClick={() => {
+                            if (!confirm('Supprimer ce réappro ? Le stock ne sera pas modifié.')) return
+                            deleteReappro(r.id)
+                          }}>✕</button>
+                      </td>
+                    </tr>
+                  ))
               }
             </tbody>
           </table>
