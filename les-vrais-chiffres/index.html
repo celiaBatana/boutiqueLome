@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Les Vrais Chiffres — Faits & Sources Officielles</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #F8F7F4;
+      --surface: #FFFFFF;
+      --border: #E5E3DC;
+      --text: #1A1917;
+      --muted: #6B6860;
+      --subtle: #A09E98;
+      --gold: #E5C100;
+      --font-d: 'Syne', sans-serif;
+      --font-b: 'DM Sans', sans-serif;
+      --r: 8px;
+    }
+    body { font-family: var(--font-b); background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; min-height: 100vh; }
+
+    /* HEADER */
+    .site-header { background: var(--text); color: white; position: sticky; top: 0; z-index: 100; border-bottom: 3px solid var(--gold); }
+    .header-inner { max-width: 1200px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-mark { background: var(--gold); color: var(--text); width: 32px; height: 32px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-family: var(--font-d); font-weight: 800; font-size: 18px; flex-shrink: 0; }
+    .logo-text { font-family: var(--font-d); font-weight: 800; font-size: 20px; letter-spacing: -0.02em; }
+    .header-tagline { font-size: 12px; color: rgba(255,255,255,0.5); letter-spacing: 0.04em; text-align: right; }
+
+    /* LAYOUT */
+    .layout { max-width: 1200px; margin: 0 auto; display: flex; min-height: calc(100vh - 61px); }
+
+    /* SIDEBAR */
+    .sidebar { width: 260px; flex-shrink: 0; padding: 28px 0 28px; border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; position: sticky; top: 61px; height: calc(100vh - 61px); overflow-y: auto; }
+    .sidebar-label { font-family: var(--font-d); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: var(--subtle); text-transform: uppercase; padding: 0 20px 8px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; background: transparent; border: none; border-left: 3px solid transparent; cursor: pointer; font-family: var(--font-b); font-size: 14px; color: var(--muted); text-align: left; transition: all 0.15s; width: 100%; }
+    .nav-item:hover { background: white; color: var(--text); }
+    .nav-active { background: white; color: var(--text); font-weight: 500; }
+    .nav-icon { font-size: 15px; width: 22px; text-align: center; flex-shrink: 0; }
+    .sidebar-footer { margin-top: auto; padding: 20px 20px 0; border-top: 1px solid var(--border); }
+    .sidebar-about { font-size: 11px; color: var(--subtle); line-height: 1.6; }
+    .sidebar-about strong { display: block; color: var(--muted); margin-bottom: 4px; font-weight: 500; }
+
+    /* MAIN */
+    .main-content { flex: 1; padding: 32px 36px; min-width: 0; }
+    .breadcrumb { font-size: 12px; color: var(--subtle); margin-bottom: 24px; letter-spacing: 0.03em; }
+
+    /* PANEL */
+    .theme-panel { display: none; animation: fadeIn 0.25s ease; }
+    .theme-panel.active { display: block; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+    .theme-panel-header { border-left: 4px solid; padding: 20px 24px; background: white; border-radius: 0 var(--r) var(--r) 0; display: flex; align-items: flex-start; gap: 16px; margin-bottom: 24px; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .theme-icon { font-size: 28px; line-height: 1; flex-shrink: 0; margin-top: 2px; }
+    .theme-title { font-family: var(--font-d); font-size: 26px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 6px; }
+    .theme-resume { font-size: 14px; color: var(--muted); line-height: 1.4; }
+
+    /* STATS */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 28px; }
+    .stat-card { background: white; border: 1px solid var(--border); border-radius: var(--r); padding: 16px; }
+    .stat-value { font-family: var(--font-d); font-size: 28px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; margin-bottom: 6px; }
+    .stat-label { font-size: 12px; color: var(--muted); line-height: 1.5; margin-bottom: 8px; }
+    .stat-source { font-size: 10px; color: var(--subtle); letter-spacing: 0.03em; padding-top: 8px; border-top: 1px solid var(--border); }
+
+    /* BAR CHART */
+    .bar-chart { background: white; border: 1px solid var(--border); border-radius: var(--r); padding: 20px; margin-bottom: 28px; }
+    .chart-title { font-family: var(--font-d); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; margin-bottom: 16px; }
+    .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .bar-label { width: 110px; font-size: 12px; color: var(--muted); text-align: right; flex-shrink: 0; }
+    .bar-track { flex: 1; background: #F1EFE8; border-radius: 3px; height: 22px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+    .bar-value { font-size: 12px; font-weight: 600; color: var(--text); width: 52px; flex-shrink: 0; }
+    .chart-source { font-size: 10px; color: var(--subtle); margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+
+    /* MYTHS */
+    .myths-title { font-family: var(--font-d); font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+    .myths-list { display: flex; flex-direction: column; gap: 8px; }
+    .myth-card { background: white; border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; transition: box-shadow 0.15s; }
+    .myth-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+    .myth-card.open { border-color: #16A34A; }
+    .myth-header { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; background: transparent; border: none; border-bottom: none; cursor: pointer; text-align: left; width: 100%; font-family: var(--font-b); }
+    .myth-header:hover { background: #FAFAF8; }
+    .myth-badge { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; padding: 3px 7px; border-radius: 3px; flex-shrink: 0; margin-top: 2px; white-space: nowrap; }
+    .badge-false { background: #FEE2E2; color: #991B1B; }
+    .badge-true { background: #DCFCE7; color: #166534; display: inline-block; margin-bottom: 10px; }
+    .myth-text { font-size: 14px; color: var(--text); font-weight: 500; flex: 1; line-height: 1.45; }
+    .myth-toggle { font-size: 13px; color: var(--subtle); flex-shrink: 0; margin-top: 2px; }
+    .myth-body { padding: 4px 16px 16px; border-top: 1px solid var(--border); background: #F8FDF9; display: none; }
+    .myth-card.open .myth-body { display: block; }
+    .myth-reality { font-size: 14px; color: var(--text); line-height: 1.65; margin-bottom: 10px; }
+    .myth-source-tag { font-size: 11px; color: var(--muted); padding: 7px 10px; background: white; border-radius: 4px; border: 1px solid var(--border); }
+
+    /* DISCLAIMER */
+    .disclaimer { margin-top: 40px; padding: 16px 20px; background: white; border: 1px solid var(--border); border-radius: var(--r); font-size: 12px; color: var(--muted); line-height: 1.6; border-left: 3px solid var(--gold); }
+    .disclaimer strong { color: var(--text); display: block; margin-bottom: 4px; font-family: var(--font-d); font-size: 13px; }
+
+    /* MOBILE */
+    .mobile-menu-btn { display: none; position: fixed; bottom: 20px; right: 20px; z-index: 200; background: var(--text); color: white; border: none; padding: 10px 18px; border-radius: 24px; font-family: var(--font-b); font-size: 13px; font-weight: 500; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.25); }
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 140; }
+    .overlay.visible { display: block; }
+
+    @media (max-width: 768px) {
+      .mobile-menu-btn { display: block; }
+      .layout { display: block; }
+      .sidebar { position: fixed; top: 0; left: -100%; width: 280px; height: 100vh; background: var(--bg); z-index: 150; border-right: 1px solid var(--border); transition: left 0.25s ease; padding-top: 24px; }
+      .sidebar.open { left: 0; }
+      .main-content { padding: 20px 16px 80px; }
+      .header-tagline { display: none; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .stat-value { font-size: 22px; }
+      .theme-title { font-size: 20px; }
+      .bar-label { width: 80px; font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-mark">✓</div>
+      <span class="logo-text">Les Vrais Chiffres</span>
+    </div>
+    <div class="header-tagline">Données officielles · Sources citées · Faits vérifiés</div>
+  </div>
+</header>
+
+<div class="overlay" id="overlay" onclick="closeMenu()"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-label">Thèmes</div>
+    <button class="nav-item nav-active" data-theme="immigration" onclick="showTheme('immigration', this)" style="border-color:#2563EB;color:#2563EB">
+      <span class="nav-icon">→</span><span>Immigration</span>
+    </button>
+    <button class="nav-item" data-theme="criminalite" onclick="showTheme('criminalite', this)">
+      <span class="nav-icon">⚖</span><span>Criminalité & Prisons</span>
+    </button>
+    <button class="nav-item" data-theme="islam" onclick="showTheme('islam', this)">
+      <span class="nav-icon">☽</span><span>Islam & Laïcité</span>
+    </button>
+    <button class="nav-item" data-theme="secu" onclick="showTheme('secu', this)">
+      <span class="nav-icon">♡</span><span>Sécu & Aides sociales</span>
+    </button>
+    <button class="nav-item" data-theme="fraude_fiscale" onclick="showTheme('fraude_fiscale', this)">
+      <span class="nav-icon">€</span><span>Fraude fiscale</span>
+    </button>
+    <button class="nav-item" data-theme="riches" onclick="showTheme('riches', this)">
+      <span class="nav-icon">◈</span><span>Aides aux grandes entreprises</span>
+    </button>
+    <div class="sidebar-footer">
+      <div class="sidebar-about">
+        <strong>Sources utilisées</strong>
+        INSEE · SSMSI · Ministère de l'Intérieur · OFPRA · DGFiP · CNAF · Sénat · OCDE · Oxfam · CEPII · IPP
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <div class="breadcrumb" id="breadcrumb">Accueil / <span id="bc-current" style="color:#2563EB">Immigration</span></div>
+
+    <!-- ============ IMMIGRATION ============ -->
+    <div class="theme-panel active" id="panel-immigration">
+      <div class="theme-panel-header" style="border-color:#2563EB">
+        <div class="theme-icon" style="color:#2563EB">→</div>
+        <div>
+          <h2 class="theme-title">Immigration</h2>
+          <p class="theme-resume">11,3% de la population — sous la moyenne européenne de 9,6%</p>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-value" style="color:#2563EB">11,3%</div><div class="stat-label">de la population est immigrée</div><div class="stat-source">INSEE 2024</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:#2563EB">8,8%</div><div class="stat-label">sont étrangers (sans nationalité FR) — sous la moy. UE (9,6%)</div><div class="stat-source">INSEE / Eurostat 2024</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:#2563EB">33%</div><div class="stat-label">des immigrés ont acquis la nationalité française</div><div class="stat-source">INSEE 2024</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:#2563EB">−5,7%</div><div class="stat-label">de demandes d'asile en 2024 — deuxième année de baisse consécutive</div><div class="stat-source">Ministère de l'Intérieur 2024</div></div>
+      </div>
+      <div class="bar-chart">
+        <div class="chart-title">Part d'étrangers dans la population (2024)</div>
+        <div class="bar-row"><div class="bar-label">Suisse</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:#CBD5E1"></div></div><div class="bar-value">26%</div></div>
+        <div class="bar-row"><div class="bar-label">Allemagne</div><div class="bar-track"><div class="bar-fill" style="width:54%;background:#CBD5E1"></div></div><div class="bar-value">14%</div></div>
+        <div class="bar-row"><div class="bar-label">Moy. UE</div><div class="bar-track"><div class="bar-fill" style="width:37%;background:#94A3B8"></div></div><div class="bar-value">9,6%</div></div>
+        <div class="bar-row"><div class="bar-label" style="font-weight:600;color:#1A1917">🇫🇷 France</div><div class="bar-track"><div class="bar-fill" style="width:34%;background:#2563EB"></div></div><div class="bar-value" style="font-weight:700">8,8%</div></div>
+        <div class="bar-row"><div class="bar-label">Italie</div><div class="bar-track"><div class="bar-fill" style="width:32%;background:#CBD5E1"></div></div><div class="bar-value">8,3%</div></div>
+        <div class="chart-source">Source : Eurostat / INSEE 2024</div>
+      </div>
+      <div class="myths-title">Idées reçues &amp; réalité</div>
+      <div class="myths-list">
+        <div class="myth-card" onclick="toggleMyth(this)">
+          <div class="myth-header"><span class="myth-badge badge-false">IDÉE REÇUE</span><span class="myth-text">« La France est submergée par l'immigration »</span><span class="myth-toggle">↓</span></div>
+          <div class="myth-body"><span class="myth-badge badge-true">RÉALITÉ</span><p class="myth-reality">La part des étrangers en France (8,8%) est inférieure à la moyenne européenne (9,6%) et inférieure à tous ses voisins : Suisse (26%), Allemagne (14%), Espagne (12%). La France arrive au 7ème rang mondial des pays d'immigration.</p><div class="myth-source-tag">📄 INSEE / Eurostat 2024</div></div>
+        </div>
+        <div class="myth-card" onclick="toggleMyth(this)">
+          <div class="myth-header"><span class="myth-badge badge-false">IDÉE REÇUE</span><span class="myth-text">« Les immigrés coûtent une fortune à l'État »</span><span class="myth-toggle">↓</span></div>
+          <div class="myth-body"><span class="myth-badge badge-true">RÉALITÉ</span><p class="myth-reality">Un immigré contribue à 0,88 € pour 1 € de dépense publique, contre 0,93 € pour un natif — soit 5 centimes de différence. L'impact budgétaire net est contenu sous 0,5% du PIB. La sous-contribution est liée au taux de chômage plus élevé, lui-même causé par les discriminations à l'embauche.</p><div class="myth-source-tag">📄 CEPII / Fondation Jean-Jaurès / OCDE 2022</div></div>
+        </div>
+        <div class="myth-card" onclick="toggleMyth(this)">
+          <div class="myth-header"><span class="myth-badge badge-false">IDÉE REÇUE</span><span class="myth-text">« Les demandes d'asile explosent »</span><span class="myth-toggle">↓</span></div>
+          <div class="myth-body"><span class="myth-badge badge-true">RÉALITÉ</span><p class="myth-reality">Les demandes d'asile sont en baisse de 5,7% en 2024 — deuxième année consécutive de recul. Sur les décisions rendues, 1 sur 2 est rejetée. Les principaux bénéficiaires sont des réfugiés de guerre (Ukrainiens, Afghans, Congolais).</p><div class="myth-source-tag">📄 OFPRA / Ministère de l'Intérieur 2024</div></div>
+        </div>
+        <div class="myth-card" onclick="toggleMyth(this)">
+          <div class="myth-header"><span class="myth-badge badge-false">IDÉE REÇUE</span><span class="myth-text">« Le grand remplacement est en cours »</span><span class="myth-toggle">↓</span></div>
+          <div class="myth-body"><span class="myth-badge badge-true">RÉALITÉ</span><p class="myth-reality">Les musulmans représentent 7% de la population adulte (IFOP 2025), loin des 31% imaginés par les Français selon Ipsos. L'IFOP lui-même conclut que la thèse du « grand remplacement » n'est pas vérifiée par les données. 37,5% des Français se déclarent sans religion.</p><div class="myth-source-tag">📄 IFOP nov. 2025 / Ipsos 2016</div></div>
+        </div>
+      </div>
+      <div class="disclaimer"><strong>À propos de ce thème</strong>Chiffres issus de l'INSEE, du Ministère de l'Intérieur, de l'OFPRA et d'Eurostat. Sources disponibles et vérifiables en ligne.</div>
+    </div>
+
+    <!-- ============ CRIMINALITÉ ============ -->
+    <div class="theme-panel" id="panel-criminalite">
+      <div class="theme-panel-header" style="border-color:#7C3AED">
+        <div class="theme-icon" style="color:#7C3AED">⚖</div>
+        <div>
+          <h2 class="theme-title">Criminalité &amp; Prisons</h2>
+          <p class="theme-resume">83% des mis en cause sont Français — la pauvreté, pas la nationalité, explique les écarts</p>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-value" style="color:#7C3AED">83%</div><div class="stat-label">des personnes mises en cause pour crimes et délits sont de nationalité française</div><div class="stat-source">SSMSI 2024</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:#7C3AED">17%</div><div class="stat-label">des mis en cause sont étrangers (pour 8,8% de la population) — un écart à contextualiser</div><div class="stat-source">SSMSI 2024</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:#7C3AED">24,5%</div><div class="stat-label">des détenus sont étrangers — à délit égal, ils ont moins accès aux peines alternatives</div><div class="stat-source">Ministère de la Justice 2024</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:#7C3AED">137%</div><div class="stat-label">taux d'occupation des prisons — surpopulation structurelle, condamnée par la CEDH</div><div class="stat-source">Ministère de la Justice 2024</div></div>
+      </div>
+      <div class="myths-title">Idées reçues &amp; réalité</div>
+      <div class="myths-list">
+        <div class="myth-card" onclick="toggleMyth(this)">
+          <div class="myth-header"><span class="myth-badge badge-false">IDÉE REÇUE</span><span class="myth-text">« Les étrangers sont responsables de la majorité des crimes »</span><span class="myth-toggle">↓</span></div>
+          <div class="myth-body"><span class="myth-badge badge-true">RÉALITÉ</span><p class="myth-reality">83% des mis en cause pour crimes et délits sont de nationalité française. Les étrangers (17% des mis en cause) sont surreprésentés par rapport à leur part dans la population (8,8%), mais cet écart s'explique principalement par la surexposition à la pauvreté et par des biais à toutes les étapes de la procédure judiciaire (comparutions immédiates, moins de peines alternatives…).</p><div class="myth-source-tag">📄 SSMSI / Observatoire International des Prisons 2024</div></div>
+        </div>
+        <div class="myth-card" onclick="toggleMyth(this)">
+          <div class="myth-header"><span class="myth-badge badge-false">IDÉE REÇUE</span><span class="myth-text">« Les prisons sont remplies d'étrangers »</span><span class="myth-toggle">↓</span></div>
+          <div class="myth-body"><span class="myth-badge badge-true">RÉALITÉ</span><p class="myth-reality">Les étrangers représentent 24,5% des détenus. L'Observatoire International des Prisons note qu'à infraction identique, les étrangers sont plus souvent condamnés à de la prison ferme, ont moins accès aux peines alternatives et sont plus souvent placés en détention provisoire. Ces biais judiciaires expliquent une grande partie de l'écart.</p><div class="myth-source-tag">📄 Ministère de la Justice / OIP 2024</div></div>
+        </div>
+        <div class="myth-card" onclick="toggleMyth(this)">
+          <div class="myth-header"><span class="myth-badge badge-false">IDÉE REÇUE</span><span class="myth-text">« La criminalité explose à cause de l'immigration »</span><span class="myth-toggle">↓</span></div>
+          <div class="myth-body"><span class="myth-badge badge-true">RÉALITÉ</span><p class="myth-reality">Le taux de criminalité est corrélé à la pauvreté, au chômage et aux inégalités — pas à la nationalité. Les homicides sont en baisse en 2024 (première fois depuis 2020). Les recherches en criminologie établissent depuis des décennies que la nationalité n'est pas un facteur explicatif indépendant de la délinquance.</p><div class="myth-source-tag">📄 SSMSI Bilan annuel 2024</div></div>
+        </div>
+      </div>
+      <div class="disclaimer"><strong>À propos de ce thème</strong>Données issues du SSMSI (Service Statistique Ministériel de la Sécurité Intérieure), du Ministère de la Justice et de l'OIP (Observatoire International des Prisons).</div>
+    </div>
+
+    <!-- ============ ISLAM ============ -->
+    <div class="theme-panel" id="panel-islam">
+      <div class="theme-panel-header" style="border-color:#059669">
+        <div class="theme-icon" style="color:#059669">☽</div>
+        <div>
+          <h2 class="theme-title">Islam &amp; Laïcité</h2>
+          <p class="theme-resume">7% de la population est musulmane — loin des 31% imaginés par les sondés</p>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-value" style="color:#059669">7%</div><div class="stat-label">des adultes français se déclarent musulmans (IFOP 2025) — contre 31% imaginés par les Français selon Ipsos</div><div class="stat-source">IFOP nov. 2025</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:#059669">37,5%</div><div class="stat-label">des Français se déclarent « sans religion » — la catégorie majoritaire</div><div class="stat-source">IFOP 2025</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:#059669">20%</div><div class="stat-label">des musulmans fréquentent régulièrement une mosquée — même taux que les autres religions pratiquantes</div><div class="stat-source">INSEE-INED enquête TEO</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:#059669">43%</div><div class="stat-label">des catholiques français ne croient plus en Dieu — la sécularisation touche toutes les religions</div><div class="stat-source">IFOP 2021</div></div>
+      </div>
+      <div class="myths-title">Idées reçues &amp; réalité</div>
+      <div class="myths-list">
+        <div class="myth-card" onclick="toggleMyth(this)">
+          <div class="myth-header"><span class="myth-badge badge-false">IDÉE REÇUE</span><span class="myth-text">« L'islam va submerger la France »</span><span class="myth-toggle">↓</span></div>
+          <div class="myth-body"><span class="myth-badge badge-true">RÉALITÉ</span><p class="myth-reality">Les musulmans représentent 7% de la population adulte selon l'IFOP (2025). Les Français imaginent en moyenne 31% — soit une surestimation de 4,4×. L'IFOP lui-même conclut que la thèse du « grand remplacement » n'est pas vérifiée. L'islam est la 2ème religion de France, loin derrière le catholicisme (43%).</p><div class="myth-source-tag">📄 IFOP nov. 2025 — étude sur 14 244 personnes</div></div>
+        </div>
+        <div class="myth-card" onclick="toggleMyth(this)">
+          <div class="myth-header"><span class="myth-badge badge-false">IDÉE REÇUE</span><span class="myth-text">« Les musulmans refusent la République »</span><span class="myth-toggle">↓</span></div>
+          <div class="myth-body"><span class="myth-badge badge-true">RÉALITÉ</span><p class="myth-reality">La laïcité garantit à chacun le droit de pratiquer sa religion dans l'espace privé. L'enquête TEO (INSEE/INED) montre que les descendants de musulmans nés et socialisés en France sont beaucoup moins conservateurs que les immigrés de première génération. La transmission de la foi est forte (91%), comme dans le judaïsme (84%) — ce n'est pas une particularité musulmane.</p><div class="myth-source-tag">📄 INSEE-INED enquête Trajectoires et Origines (TEO)</div></div>
+        </div>
+        <div class="myth-card" onclick="toggleMyth(this)">
+          <div class="myth-header"><span class="myth-badge badge-false">IDÉE REÇUE</span><span class="myth-text">« L'islam est incompatible avec les valeurs françaises »</span><span class="myth-toggle">↓</span></div>
+          <div class="myth-body"><span class="myth-badge badge-true">RÉALITÉ</span><p class="myth-reality">56% des Français estimaient l'islam compatible avec les valeurs françaises en 2018 (IFOP/JDD). Les préjugés antisémites sont plus répandus à l'extrême droite que chez les musulmans selon les études disponibles. Les attitudes conservatrices se retrouvent dans tous les groupes religieux pratiquants, toutes confessions confondues.</p><div class="myth-source-tag">📄 IFOP / INSEE-INED enquête TEO / The Conversation 2025</div></div>
+        </div>
+      </div>
+      <div class="disclaimer"><strong>À propos de ce thème</strong>Données issues de l'IFOP (enquête nov. 2025 sur 14 244 personnes), de l'INSEE et de l'INED (enquête TEO). Note : l'étude IFOP 2025 fait l'objet de débats méthodologiques — voir The Conversation pour une analyse critique.</div>
+    </div>
+
+    <!-- ============ SÉCURITÉ SOCIALE ============ -->
+    <div class="theme-panel" id="panel-secu">
+      <div class="theme-panel-header" style="border-color:#DC2626">
+        <div class="theme-icon" style="color:#DC2626">♡</div>
+        <div>
+          <h2 class="theme-title">Sécu &amp; Aides sociales</h2>
+          <p class="theme-resume">0,45% des prestations fraudées à la CAF — contre 35–40 Md€ de fraude fiscale</p>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-value" style="color:#DC2626">100 Md€</div><div class="stat-label">versés par an par les CAF en prestations sociales légales aux Français</div><div class="stat-source">CNAF 2024</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:#DC2626">450 M€</div><div class="stat-label">de fraudes détectées à la CAF en 2024 — soit 0,45% des prestations versées</div><div class="stat-source">CNAF 2024</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:#DC2626">80%</div><div class="stat-label">des sommes fraudées sont récupérées grâce aux contrôles croisés</div><div class="stat-source">Directeur CNAF N. Grivel 2024</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:#DC2626">&lt; 3%</div><div class="stat-label">des prestations CAF font l'objet de fraude estimée — « ne dépasse pas 3% » selon la CNAF</div><div class="stat-source">CNAF 2024</div></div>
+      </div>
+      <div class="myths-title">Idées reçues &amp; réalité</div>
+      <div class="myths-list">
+        <div class="myth-card" onclick="toggleMyth(this)">
+          <div class="myth-header"><span class="myth-badge badge-false">IDÉE REÇUE</span><span class="myth-text">« La fraude sociale détruit les comptes publics »</span><span class="myth-toggle">↓</span></div>
+          <div class="myth-body"><span class="myth-badge badge-true">RÉALITÉ</span><p class="myth-reality">La fraude aux prestations sociales est estimée à 12 milliards/an — un enjeu réel mais limité. La fraude fiscale (entreprises et particuliers aisés) est estimée à 35-40 milliards/an, soit 3× plus. Pourtant, la fraude sociale reçoit une attention médiatique et politique disproportionnée. Le directeur de la CNAF lui-même relativise : « La fraude ne dépasse pas 3% des montants versés ».</p><div class="myth-source-tag">📄 CNAF 2024 / DGFiP — directeur Nicolas Grivel, mai 2025</div></div>
+        </div>
+        <div class="myth-card" onclick="toggleMyth(this)">
+          <div class="myth-header"><span class="myth-badge badge-false">IDÉE REÇUE</span><span class="myth-text">« Les aides sociales créent une culture de l'assistanat »</span><span class="myth-toggle">↓</span></div>
+          <div class="myth-body"><span class="myth-badge badge-true">RÉALITÉ</span><p class="myth-reality">Les prestations sociales réduisent la pauvreté et amortissent les chocs économiques. La France maintient l'un des systèmes de protection sociale les plus efficaces d'Europe. Sans transferts sociaux, le taux de pauvreté serait nettement plus élevé. Les études économiques montrent que les aides à l'emploi et aux familles stimulent la consommation et donc l'activité économique.</p><div class="myth-source-tag">📄 INSEE / Rapport DREES</div></div>
+        </div>
+      </div>
+      <div class="disclaimer"><strong>À propos de ce thème</strong>Données issues de la CNAF (Caisse Nationale des Allocations Familiales) et du Ministère de l'Économie (DGFiP).</div>
+    </div>
+
+    <!-- ============ FRAUDE FISCALE ============ -->
+    <div class="theme-panel" id="panel-fraude_fiscale">
+      <div class="theme-panel-header" style="border-color:#B45309">
+        <div class="theme-icon" style="color:#B45309">€</div>
+        <div>
+          <h2 class="theme-title">Fraude fiscale</h2>
+          <p class="theme-resume">35–40 Md€/an — 3× la fraude sociale, quasi-invisibilisée dans le débat public</p>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-value" style="color:#B45309">35–40 Md€</div><div class="stat-label">de fraude fiscale estimée chaque année — 3 à 4× plus que la fraude sociale</div><div class="stat-source">DGFiP / IFRAP 2024</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:#B45309">16,7 Md€</div><div class="stat-label">mis en recouvrement en 2024 — record — mais seulement 42% de la fraude totale estimée</div><div class="stat-source">DGFiP 2024</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:#B45309">97%</div><div class="stat-label">du revenu économique des 75 ménages milliardaires français n'est pas imposable (via holdings)</div><div class="stat-source">IPP / Assemblée nationale 2024</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:#B45309">0,2%</div><div class="stat-label">taux d'imposition effectif des 500 plus grandes fortunes — contre 20–45% pour un salarié</div><div class="stat-source">Rapport Assemblée nationale 2024</div></div>
+      </div>
+      <div class="bar-chart">
+        <div class="chart-title">Fraude fiscale vs fraude sociale (estimation annuelle)</div>
+        <div class="bar-row"><div class="bar-label" style="font-weight:600;color:#1A1917">Fraude fiscale</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:#B45309"></div></div><div class="bar-value" style="font-weight:700">~40 Md€</div></div>
+        <div class="bar-row"><div class="bar-label">Fraude sociale</div><div class="bar-track"><div class="bar-fill" style="width:30%;background:#CBD5E1"></div></div><div class="bar-value">~12 Md€</div></div>
+        <div class="bar-row"><div class="bar-label">Fraude CAF détectée</div><div class="bar-track"><div class="bar-fill" style="width:1.1%;background:#E2E8F0"></div></div><div class="bar-value">0,45 Md€</div></div>
+        <div class="chart-source">Source : DGFiP / CNAF 2024 — estimations officielles</div>
+      </div>
+      <div class="myths-title">Idées reçues &amp; réalité</div>
+      <div class="myths-list">
+        <div class="myth-card" onclick="toggleMyth(this)">
+          <div class="myth-header"><span class="myth-badge badge-false">IDÉE REÇUE</span><span class="myth-text">« La fraude sociale est le grand problème budgétaire »</span><span class="myth-toggle">↓</span></div>
+          <div class="myth-body"><span class="myth-badge badge-true">RÉALITÉ</span><p class="myth-reality">La fraude sociale est estimée à 12 milliards/an. La fraude fiscale est estimée à 35-40 milliards — soit 3× plus. Ce sont les grandes entreprises et les particuliers très aisés qui fraudent le plus, selon la DGFiP. Pourtant c'est la fraude sociale qui occupe le débat public et les campagnes politiques. Le directeur de la CNAF lui-même souligne ce déséquilibre.</p><div class="myth-source-tag">📄 DGFiP / CNAF — directeur Nicolas Grivel, mai 2025</div></div>
+        </div>
+        <div class="myth-card" onclick="toggleMyth(this)">
+          <div class="myth-header"><span class="myth-badge badge-false">IDÉE REÇUE</span><span class="myth-text">« Les milliardaires paient leur juste part d'impôts »</span><span class="myth-toggle">↓</span></div>
+          <div class="myth-body"><span class="myth-badge badge-true">RÉALITÉ</span><p class="myth-reality">L'IPP (Institut des Politiques Publiques) a montré que 97% du revenu économique des 75 ménages milliardaires français n'est pas imposable. Leur fortune est logée dans des holdings qui distribuent le minimum de dividendes. Les 500 plus grandes fortunes ont un taux effectif d'imposition de 0,2%. Le G20 a mandaté l'économiste Gabriel Zucman pour proposer un impôt minimum de 2%.</p><div class="myth-source-tag">📄 IPP / Rapport G20 Zucman 2024 / Assemblée nationale</div></div>
+        </div>
+      </div>
+      <div class="disclaimer"><strong>À propos de ce thème</strong>Données issues de la DGFiP (Direction Générale des Finances Publiques), de l'IPP (Institut des Politiques Publiques) et du rapport remis au G20 par Gabriel Zucman (2024).</div>
+    </div>
+
+    <!-- ============ AIDES AUX RICHES ============ -->
+    <div class="theme-panel" id="panel-riches">
+      <div class="theme-panel-header" style="border-color:#0F766E">
+        <div class="theme-icon" style="color:#0F766E">◈</div>
+        <div>
+          <h2 class="theme-title">Aides aux grandes entreprises</h2>
+          <p class="theme-resume">211 Md€/an — le 1er budget de l'État, sans contrepartie, sans évaluation</p>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-value" style="color:#0F766E">211 Md€</div><div class="stat-label">d'aides publiques aux entreprises en 2023 — 1er budget de l'État, devant l'Éducation nationale</div><div class="stat-source">Commission d'enquête Sénat 2025</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:#0F766E">42%</div><div class="stat-label">de ces aides vont aux grandes entreprises — seulement 23% aux PME</div><div class="stat-source">Rapport Sénat / ATTAC 2025</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:#0F766E">100 Md€</div><div class="stat-label">de dividendes versés aux actionnaires en 2024 — record européen. Richesse de 90% des Français en baisse depuis 2020.</div><div class="stat-source">ATTAC / Oxfam 2024</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:#0F766E">1,9 Md€</div><div class="stat-label">reçus par Auchan en aides publiques (2013–2023) — puis 2 300 suppressions d'emplois annoncées</div><div class="stat-source">Rapport Sénat 2025</div></div>
+      </div>
+      <div class="myths-title">Idées reçues &amp; réalité</div>
+      <div class="myths-list">
+        <div class="myth-card" onclick="toggleMyth(this)">
+          <div class="myth-header"><span class="myth-badge badge-false">IDÉE REÇUE</span><span class="myth-text">« L'État n'a pas les moyens d'en faire plus pour les plus démunis »</span><span class="myth-toggle">↓</span></div>
+          <div class="myth-body"><span class="myth-badge badge-true">RÉALITÉ</span><p class="myth-reality">L'État verse 211 milliards d'aides aux entreprises par an — premier budget de l'État, sans évaluation systématique. Le Sénat note que le suivi des dépenses fiscales est « défaillant » pour la majorité des dispositifs. Ces 211 milliards représentent 3× le budget de l'Éducation nationale et 7× le budget du logement social.</p><div class="myth-source-tag">📄 Commission d'enquête du Sénat, juillet 2025</div></div>
+        </div>
+        <div class="myth-card" onclick="toggleMyth(this)">
+          <div class="myth-header"><span class="myth-badge badge-false">IDÉE REÇUE</span><span class="myth-text">« Ces aides créent des emplois et profitent à tous »</span><span class="myth-toggle">↓</span></div>
+          <div class="myth-body"><span class="myth-badge badge-true">RÉALITÉ</span><p class="myth-reality">Auchan a reçu 636 millions d'aides fiscales et 1,3 milliard d'allègements de cotisations sociales entre 2013 et 2023 — puis a annoncé la suppression de 2 300 emplois. Le Sénat constate que ces aides profitent en priorité aux entreprises déjà les plus profitables. Elles ont triplé depuis 1999 (de 50 à plus de 150 milliards) sans conditionnalité emploi.</p><div class="myth-source-tag">📄 Rapport Sénat 2025 / IRES 2022</div></div>
+        </div>
+        <div class="myth-card" onclick="toggleMyth(this)">
+          <div class="myth-header"><span class="myth-badge badge-false">IDÉE REÇUE</span><span class="myth-text">« Les ultra-riches méritent leur fortune »</span><span class="myth-toggle">↓</span></div>
+          <div class="myth-body"><span class="myth-badge badge-true">RÉALITÉ</span><p class="myth-reality">Les 42 milliardaires français ont gagné 230 milliards € depuis 2020, pendant que la richesse cumulée de 90% des Français baissait. Les 0,1% les plus riches ont vu leur revenu augmenter de 119% depuis 2003. Leur taux d'imposition effectif a baissé sur la même période. 78% des Français soutiennent une taxation plus élevée des grandes fortunes (sondage Vérian, sept. 2024).</p><div class="myth-source-tag">📄 Oxfam France 2024 / DGFiP / sondage Vérian sept. 2024</div></div>
+        </div>
+      </div>
+      <div class="disclaimer"><strong>À propos de ce thème</strong>Données issues du rapport de la commission d'enquête sénatoriale (juillet 2025), d'Oxfam France, de l'IRES et de la DGFiP.</div>
+    </div>
+
+  </main>
+</div>
+
+<button class="mobile-menu-btn" onclick="toggleMenu()">☰ Thèmes</button>
+
+<script>
+  const COLORS = {
+    immigration: "#2563EB",
+    criminalite: "#7C3AED",
+    islam: "#059669",
+    secu: "#DC2626",
+    fraude_fiscale: "#B45309",
+    riches: "#0F766E"
+  };
+  const LABELS = {
+    immigration: "Immigration",
+    criminalite: "Criminalité & Prisons",
+    islam: "Islam & Laïcité",
+    secu: "Sécu & Aides sociales",
+    fraude_fiscale: "Fraude fiscale",
+    riches: "Aides aux grandes entreprises"
+  };
+
+  function showTheme(id, btn) {
+    // Masquer tous les panels
+    document.querySelectorAll('.theme-panel').forEach(p => p.classList.remove('active'));
+    // Afficher le panel actif
+    document.getElementById('panel-' + id).classList.add('active');
+    // Mettre à jour nav
+    document.querySelectorAll('.nav-item').forEach(b => {
+      b.classList.remove('nav-active');
+      b.style.borderColor = 'transparent';
+      b.style.color = '';
+    });
+    btn.classList.add('nav-active');
+    btn.style.borderColor = COLORS[id];
+    btn.style.color = COLORS[id];
+    // Breadcrumb
+    const bc = document.getElementById('bc-current');
+    bc.textContent = LABELS[id];
+    bc.style.color = COLORS[id];
+    // Scroll top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    closeMenu();
+  }
+
+  function toggleMyth(card) {
+    const isOpen = card.classList.contains('open');
+    card.classList.toggle('open', !isOpen);
+    const toggle = card.querySelector('.myth-toggle');
+    if (toggle) toggle.textContent = isOpen ? '↓' : '↑';
+  }
+
+  function toggleMenu() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('visible');
+  }
+  function closeMenu() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('visible');
+  }
+</script>
+</body>
+</html>
