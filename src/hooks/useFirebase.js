@@ -56,6 +56,22 @@ export function useNotes() {
   return { notes, setNote, deleteNote }
 }
 
+export function useReappros() {
+  const { data, loading } = useCollection(COLLECTIONS.REAPPROS, 'createdAt')
+
+  const addReappro = async (r) => {
+    await addDoc(collection(db, COLLECTIONS.REAPPROS), {
+      ...r, createdAt: serverTimestamp(),
+    })
+  }
+
+  const deleteReappro = async (id) => {
+    await deleteDoc(doc(db, COLLECTIONS.REAPPROS, id))
+  }
+
+  return { reappros: data, loading, addReappro, deleteReappro }
+}
+
 // ── Marges ──
 export function useMarges() {
   const [marges, setMargesState] = useState({})
