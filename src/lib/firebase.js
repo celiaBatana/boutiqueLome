@@ -25,4 +25,5 @@ export const COLLECTIONS = {
   INVESTISSEMENTS: 'boutique_investissements',
   MARGES: 'boutique_marges',
   NOTES: 'boutique_notes',
+  REAPPROS: 'boutique_reappros',
 }
