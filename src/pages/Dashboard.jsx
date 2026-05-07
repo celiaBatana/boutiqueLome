@@ -108,6 +108,61 @@ function ReportBlock({ m, getReport, setReport, caisse }) {
   )
 }
 
+// ── Comparaison mois/mois ──
+function ComparaisonMois({ current, previous, labelCurrent, labelPrevious }) {
+  if (!previous) return null
+
+  const items = [
+    { label: 'Revenus', cur: current.tvM, prev: previous.tvM, color: 'var(--em)' },
+    { label: 'Dépenses', cur: current.tdM, prev: previous.tdM, color: 'var(--coral)', inverse: true },
+    { label: 'Bénéfice estimé', cur: current.benEstime, prev: previous.benEstime, color: 'var(--violet)' },
+  ]
+
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg,rgba(99,102,241,.06),rgba(99,102,241,.02))',
+      border: '1.5px solid rgba(99,102,241,.2)',
+      borderRadius: 14, padding: '14px 18px', marginBottom: 20,
+      boxShadow: '0 4px 16px rgba(99,102,241,.08)',
+    }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 12 }}>
+        📊 Comparaison {labelCurrent} vs {labelPrevious}
+      </div>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        {items.map(({ label, cur, prev, color, inverse }) => {
+          const diff = cur - prev
+          const pct = prev > 0 ? Math.round(diff / prev * 100) : cur > 0 ? 100 : 0
+          const isUp = inverse ? diff < 0 : diff > 0
+          const isNeutral = diff === 0
+          return (
+            <div key={label} style={{
+              flex: 1, minWidth: 120,
+              background: '#fff',
+              borderRadius: 10, padding: '10px 14px',
+              border: '1.5px solid rgba(99,102,241,.15)',
+            }}>
+              <div style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600, textTransform: 'uppercase', marginBottom: 6 }}>{label}</div>
+              <div style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 16, color, marginBottom: 4 }}>
+                {fmt(cur)} FCFA
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ fontSize: 13 }}>{isNeutral ? '➡️' : isUp ? '📈' : '📉'}</span>
+                <span style={{
+                  fontSize: 11, fontWeight: 700,
+                  color: isNeutral ? 'var(--text3)' : isUp ? 'var(--em)' : 'var(--coral)'
+                }}>
+                  {isNeutral ? '=' : (diff > 0 ? '+' : '')}{pct}%
+                </span>
+                <span style={{ fontSize: 10, color: 'var(--text3)' }}>vs {fmt(prev)} FCFA</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ── Tableau ventes paginé ──
 function VentesMoisTable({ ventes, setPage: setAppPage }) {
   const [page, setPage] = useState(1)
@@ -172,6 +227,27 @@ function VentesMoisTable({ ventes, setPage: setAppPage }) {
   )
 }
 
+// ── Helper : calcul stats d'un mois ──
+function calcMoisStats(m, ventes, depenses, produits, marges, getReport) {
+  const ms  = ventes.filter(v => (v.date || '').startsWith(m))
+  const md  = depenses.filter(d => (d.date || '').startsWith(m))
+  const tvM = ms.reduce((a, v) => a + (v.total || 0), 0)
+  const tdM = md.reduce((a, d) => a + (d.montant || 0), 0)
+  const report = getReport(m)
+  const benEstime = Math.round(ms.reduce((a, v) => {
+    const cat = v.typeCredit ? 'Crédit téléphonique'
+      : (produits.find(p => p.id === v.prodId)?.cat || v.prodCat || 'Autre')
+    return a + (v.total || 0) * ((marges?.[cat] ?? 20) / 100)
+  }, 0))
+  return { tvM, tdM, benEstime, report }
+}
+
+function prevMonth(m) {
+  const [y, mo] = m.split('-').map(Number)
+  const d = new Date(y, mo - 2, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
 // ── Dashboard principal ──
 export default function Dashboard({ setPage }) {
   const { produits, loading: lP } = useProduits()
@@ -220,7 +296,6 @@ export default function Dashboard({ setPage }) {
     const maxDay = Math.max(...days.map(d => d.total), 1)
     const top4 = [...days].sort((a, b) => b.total - a.total).slice(0, 4).map(d => d.day)
 
-    // Revenus par catégorie
     const catStatsMap = {}
     ms.forEach(v => {
       const cat = v.typeCredit ? 'Crédit téléphonique'
@@ -233,7 +308,6 @@ export default function Dashboard({ setPage }) {
       .map(([cat, d]) => ({ cat, ...d }))
       .sort((a, b) => b.total - a.total)
 
-    // Bénéfice estimé via marges
     const benEstime = Math.round(
       ms.reduce((a, v) => {
         const cat = v.typeCredit ? 'Crédit téléphonique'
@@ -243,7 +317,11 @@ export default function Dashboard({ setPage }) {
       }, 0)
     )
 
-    return { ts, ms, tvT, tvM, tdM, ben: tvM - tdM, caisse, report, low, top, days, top4, maxDay, m, catStats, benEstime }
+    // Mois précédent
+    const mPrev = prevMonth(m)
+    const prevStats = calcMoisStats(mPrev, ventes, depenses, produits, marges, getReport)
+
+    return { ts, ms, tvT, tvM, tdM, ben: tvM - tdM, caisse, report, low, top, days, top4, maxDay, m, catStats, benEstime, prevStats, mPrev }
   }, [ventes, depenses, produits, t, onglet, moisSel, getReport, marges])
 
   if (lP || lV || lD) return <Spinner />
@@ -364,6 +442,13 @@ export default function Dashboard({ setPage }) {
         <>
           <ReportBlock m={currentMonth()} getReport={getReport} setReport={setReport} caisse={stats.caisse} />
 
+          <ComparaisonMois
+            current={{ tvM: stats.tvM, tdM: stats.tdM, benEstime: stats.benEstime }}
+            previous={stats.prevStats}
+            labelCurrent={fmtMonth(stats.m)}
+            labelPrevious={fmtMonth(stats.mPrev)}
+          />
+
           <div className="stat-grid">
             <StatCard colorClass="c0" icon="💰" label="Ventes aujourd'hui"
               value={fmt(stats.tvT)} sub={`FCFA · ${stats.ts.length} vente${stats.ts.length > 1 ? 's' : ''}`} />
@@ -419,6 +504,13 @@ export default function Dashboard({ setPage }) {
         <>
           <ReportBlock m={moisSel} getReport={getReport} setReport={setReport} caisse={stats.caisse} />
 
+          <ComparaisonMois
+            current={{ tvM: stats.tvM, tdM: stats.tdM, benEstime: stats.benEstime }}
+            previous={stats.prevStats}
+            labelCurrent={fmtMonth(stats.m)}
+            labelPrevious={fmtMonth(stats.mPrev)}
+          />
+
           <div className="stat-grid">
             <StatCard colorClass="c0" icon="💰" label="Revenus"
               value={fmt(stats.tvM)} sub={`FCFA · ${stats.ms.length} vente${stats.ms.length > 1 ? 's' : ''}`} />
@@ -438,16 +530,11 @@ export default function Dashboard({ setPage }) {
             <SCard title="🏆 Top produits du mois">
               <BarChart data={stats.top} />
             </SCard>
-
             <SCard title={`📆 Ventes par jour — ${fmtMonth(stats.m)}`}>
               <Heatmap days={stats.days} top4={stats.top4} maxDay={stats.maxDay} />
             </SCard>
-
             <StocksFaibles />
-
             <CatStats />
-
-            {/* Tableau paginé — pleine largeur */}
             <div style={{ gridColumn: '1 / -1' }}>
               <VentesMoisTable ventes={stats.ms} setPage={setPage} />
             </div>
