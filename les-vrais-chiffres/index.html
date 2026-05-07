@@ -410,14 +410,17 @@
         <div class="bar-chart" style="padding:18px">
           <div class="chart-title">Prison ferme en comparution immédiate — à profil identique, sans antécédent</div>
           <div style="font-size:11px;color:var(--subtle);margin-bottom:14px">Source : CIMADE / Cairn</div>
-          <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:320px;margin-bottom:8px">
-            <rect x="20" y="60" width="60" height="50" rx="3" fill="#7C3AED" opacity="0.85"/>
-            <text x="50" y="52" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-size="14" font-weight="700" fill="#7C3AED">41,8%</text>
-            <text x="50" y="118" text-anchor="middle" font-family="Space Grotesk,sans-serif" font-size="9" fill="#6B6860">🇫🇷 Français</text>
-            <rect x="120" y="12" width="60" height="98" rx="3" fill="#DC2626" opacity="0.85"/>
-            <text x="150" y="8" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-size="14" font-weight="700" fill="#DC2626">77,6%</text>
-            <text x="150" y="118" text-anchor="middle" font-family="Space Grotesk,sans-serif" font-size="9" fill="#6B6860">Étrangers</text>
-            <line x1="10" y1="110" x2="190" y2="110" stroke="#E5E3DC" stroke-width="1"/>
+          <svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:320px;margin-bottom:8px">
+            <!-- Ligne de base -->
+            <line x1="10" y1="128" x2="190" y2="128" stroke="#E5E3DC" stroke-width="1"/>
+            <!-- Barre Français : hauteur proportionnelle 41.8/77.6 * 80 = 43px -->
+            <rect x="20" y="85" width="60" height="43" rx="3" fill="#7C3AED" opacity="0.85"/>
+            <text x="50" y="78" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-size="14" font-weight="700" fill="#7C3AED">41,8%</text>
+            <text x="50" y="143" text-anchor="middle" font-family="Space Grotesk,sans-serif" font-size="9" fill="#6B6860">🇫🇷 Français</text>
+            <!-- Barre Étrangers : hauteur max 80px -->
+            <rect x="120" y="28" width="60" height="100" rx="3" fill="#DC2626" opacity="0.85"/>
+            <text x="150" y="20" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-size="14" font-weight="700" fill="#DC2626">77,6%</text>
+            <text x="150" y="143" text-anchor="middle" font-family="Space Grotesk,sans-serif" font-size="9" fill="#6B6860">Étrangers</text>
           </svg>
           <div style="font-size:11px;color:var(--muted);line-height:1.5">À profil identique et sans antécédent judiciaire, un étranger a presque le <strong>double de chances</strong> d'être condamné à de la prison ferme en comparution immédiate.</div>
         </div>
