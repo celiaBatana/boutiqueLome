@@ -8,18 +8,17 @@ const PAGE_SIZE = 15
 // ── Heatmap ──
 function Heatmap({ days, top4, maxDay }) {
   const getColor = (total) => {
-    if (total === 0) return { bg: 'var(--bg)', text: 'var(--text3)', border: 'var(--border2)' }
-    if (total < 1000) return { bg: 'rgba(232,69,69,.12)', text: 'var(--coral)', border: 'rgba(232,69,69,.25)' }
-    if (total < 2000) return { bg: 'rgba(240,165,0,.15)', text: '#8a5c00', border: 'rgba(240,165,0,.3)' }
-    // Vert avec intensité croissante
-    const intensity = Math.min(1, (total - 2000) / (maxDay - 2000 || 1))
-    const green = Math.round(80 + intensity * 100) // de 80 à 180
-    return {
-      bg: `rgba(14,${green + 80},${green - 20},.${Math.round(15 + intensity * 65)})`,
-      text: intensity > 0.5 ? '#fff' : 'var(--em-d)',
-      border: `rgba(14,165,107,${0.2 + intensity * 0.6})`
-    }
+  if (total === 0) return { bg: 'var(--bg)', text: 'var(--text3)', border: 'var(--border2)' }
+  if (total < 1000) return { bg: 'rgba(232,69,69,.1)', text: 'var(--coral)', border: 'rgba(232,69,69,.2)' }
+  if (total < 2000) return { bg: 'rgba(240,165,0,.13)', text: '#8a5c00', border: 'rgba(240,165,0,.25)' }
+  // Vert uniforme — même teinte, juste l'opacité qui monte
+  const intensity = Math.min(0.9, 0.18 + ((total - 2000) / Math.max(maxDay - 2000, 1)) * 0.72)
+  return {
+    bg: `rgba(14,165,107,${intensity.toFixed(2)})`,
+    text: intensity > 0.45 ? '#fff' : 'var(--em-d)',
+    border: `rgba(14,165,107,${Math.min(1, intensity + 0.15).toFixed(2)})`
   }
+}
 
   return (
     <>
