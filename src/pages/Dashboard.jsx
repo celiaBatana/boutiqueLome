@@ -42,26 +42,37 @@ function Heatmap({ days, top4, maxDay }) {
           )
         })}
       </div>
-      {/* Légende */}
-      <div style={{ display: 'flex', gap: 10, marginTop: 14, fontSize: 10, color: 'var(--text3)', flexWrap: 'wrap', alignItems: 'center' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ width: 12, height: 12, borderRadius: 3, background: 'rgba(232,69,69,.12)', border: '1px solid rgba(232,69,69,.25)', display: 'inline-block' }} />
-          &lt; 1 000 FCFA
-        </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ width: 12, height: 12, borderRadius: 3, background: 'rgba(240,165,0,.2)', border: '1px solid rgba(240,165,0,.3)', display: 'inline-block' }} />
-          1 000 – 2 000 FCFA
-        </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ width: 12, height: 12, borderRadius: 3, background: 'rgba(14,165,107,.5)', display: 'inline-block' }} />
-          &gt; 2 000 FCFA
-        </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ width: 12, height: 12, borderRadius: 3, background: 'rgba(14,165,107,.9)', display: 'inline-block' }} />
-          Meilleur jour
-        </span>
-        <span>🏆 Top 4</span>
-      </div>
+      {/* Comptage */}
+      {(() => {
+        const actifs = days.filter(d => d.total > 0)
+        const rouges = actifs.filter(d => d.total < 1000).length
+        const oranges = actifs.filter(d => d.total >= 1000 && d.total < 2000).length
+        const verts = actifs.filter(d => d.total >= 2000).length
+        return (
+          <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(232,69,69,.08)', border: '1px solid rgba(232,69,69,.2)', borderRadius: 8, padding: '4px 10px' }}>
+                <span style={{ width: 10, height: 10, borderRadius: 2, background: 'rgba(232,69,69,.4)', display: 'inline-block' }} />
+                <span style={{ fontSize: 11, color: 'var(--coral)', fontWeight: 700 }}>{rouges} jour{rouges > 1 ? 's' : ''}</span>
+                <span style={{ fontSize: 10, color: 'var(--text3)' }}>&lt; 1 000 FCFA</span>
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(240,165,0,.08)', border: '1px solid rgba(240,165,0,.2)', borderRadius: 8, padding: '4px 10px' }}>
+                <span style={{ width: 10, height: 10, borderRadius: 2, background: 'rgba(240,165,0,.5)', display: 'inline-block' }} />
+                <span style={{ fontSize: 11, color: '#8a5c00', fontWeight: 700 }}>{oranges} jour{oranges > 1 ? 's' : ''}</span>
+                <span style={{ fontSize: 10, color: 'var(--text3)' }}>1 000 – 2 000 FCFA</span>
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(14,165,107,.08)', border: '1px solid rgba(14,165,107,.2)', borderRadius: 8, padding: '4px 10px' }}>
+                <span style={{ width: 10, height: 10, borderRadius: 2, background: 'rgba(14,165,107,.6)', display: 'inline-block' }} />
+                <span style={{ fontSize: 11, color: 'var(--em-d)', fontWeight: 700 }}>{verts} jour{verts > 1 ? 's' : ''}</span>
+                <span style={{ fontSize: 10, color: 'var(--text3)' }}>&gt; 2 000 FCFA</span>
+              </span>
+            </div>
+            <div style={{ fontSize: 10, color: 'var(--text3)' }}>
+              🏆 Top 4 jours · {actifs.length} jour{actifs.length > 1 ? 's' : ''} travaillé{actifs.length > 1 ? 's' : ''} ce mois
+            </div>
+          </div>
+        )
+      })()}
     </>
   )
 }
