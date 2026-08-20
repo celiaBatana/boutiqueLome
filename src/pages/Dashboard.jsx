@@ -7,25 +7,35 @@ const PAGE_SIZE = 15
 
 // ── Heatmap ──
 function Heatmap({ days, top4, maxDay }) {
+  const getColor = (total) => {
+    if (total === 0) return { bg: 'var(--bg)', text: 'var(--text3)', border: 'var(--border2)' }
+    if (total < 1000) return { bg: 'rgba(232,69,69,.12)', text: 'var(--coral)', border: 'rgba(232,69,69,.25)' }
+    if (total < 2000) return { bg: 'rgba(240,165,0,.15)', text: '#8a5c00', border: 'rgba(240,165,0,.3)' }
+    // Vert avec intensité croissante
+    const intensity = Math.min(1, (total - 2000) / (maxDay - 2000 || 1))
+    const green = Math.round(80 + intensity * 100) // de 80 à 180
+    return {
+      bg: `rgba(14,${green + 80},${green - 20},.${Math.round(15 + intensity * 65)})`,
+      text: intensity > 0.5 ? '#fff' : 'var(--em-d)',
+      border: `rgba(14,165,107,${0.2 + intensity * 0.6})`
+    }
+  }
+
   return (
     <>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
         {days.map(({ day, total }) => {
           const isTop = top4.includes(day)
-          const intensity = total ? Math.max(0.15, total / maxDay) : 0
-          const bg = total === 0 ? 'var(--bg)'
-            : isTop ? `rgba(14,165,107,${intensity})`
-            : `rgba(14,165,107,${intensity * 0.6})`
-          const textColor = isTop && total > 0 ? 'var(--em-d)' : total > 0 ? 'var(--text2)' : 'var(--text3)'
+          const { bg, text, border } = getColor(total)
           return (
             <div key={day} title={total > 0 ? fmt(total) + ' FCFA' : 'Aucune vente'} style={{
               width: 52, borderRadius: 10, background: bg,
-              border: isTop ? '2px solid var(--em)' : '1.5px solid var(--border2)',
+              border: isTop ? '2px solid var(--em)' : `1.5px solid ${border}`,
               padding: '8px 4px', textAlign: 'center', transition: 'all .2s',
               boxShadow: isTop ? '0 4px 12px rgba(14,165,107,.25)' : 'none', cursor: 'default',
             }}>
-              <div style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600, marginBottom: 4 }}>{day}</div>
-              <div style={{ fontSize: 10, fontWeight: 800, color: textColor, fontFamily: 'Nunito,sans-serif', lineHeight: 1.2 }}>
+              <div style={{ fontSize: 10, color: total === 0 ? 'var(--text3)' : text, fontWeight: 600, marginBottom: 4, opacity: .8 }}>{day}</div>
+              <div style={{ fontSize: 10, fontWeight: 800, color: text, fontFamily: 'Nunito,sans-serif', lineHeight: 1.2 }}>
                 {total > 0 ? fmt(total) : '—'}
               </div>
               {isTop && total > 0 && <div style={{ fontSize: 9, marginTop: 3 }}>🏆</div>}
@@ -33,16 +43,25 @@ function Heatmap({ days, top4, maxDay }) {
           )
         })}
       </div>
-      <div style={{ display: 'flex', gap: 16, marginTop: 14, fontSize: 11, color: 'var(--text3)', flexWrap: 'wrap', alignItems: 'center' }}>
-        <span>🏆 Top 4 jours</span>
+      {/* Légende */}
+      <div style={{ display: 'flex', gap: 10, marginTop: 14, fontSize: 10, color: 'var(--text3)', flexWrap: 'wrap', alignItems: 'center' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ width: 12, height: 12, borderRadius: 3, background: 'rgba(14,165,107,.6)', display: 'inline-block' }} />
-          Plus de ventes
+          <span style={{ width: 12, height: 12, borderRadius: 3, background: 'rgba(232,69,69,.12)', border: '1px solid rgba(232,69,69,.25)', display: 'inline-block' }} />
+          &lt; 1 000 FCFA
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ width: 12, height: 12, borderRadius: 3, background: 'var(--bg)', border: '1px solid var(--border2)', display: 'inline-block' }} />
-          Aucune vente
+          <span style={{ width: 12, height: 12, borderRadius: 3, background: 'rgba(240,165,0,.2)', border: '1px solid rgba(240,165,0,.3)', display: 'inline-block' }} />
+          1 000 – 2 000 FCFA
         </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 12, height: 12, borderRadius: 3, background: 'rgba(14,165,107,.5)', display: 'inline-block' }} />
+          &gt; 2 000 FCFA
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 12, height: 12, borderRadius: 3, background: 'rgba(14,165,107,.9)', display: 'inline-block' }} />
+          Meilleur jour
+        </span>
+        <span>🏆 Top 4</span>
       </div>
     </>
   )
