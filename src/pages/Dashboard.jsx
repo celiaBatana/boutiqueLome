@@ -85,11 +85,11 @@ function ReportBlock({ m, getReport, setReport, caisse }) {
 
   return (
     <div style={{
-      background: 'linear-gradient(135deg,#fff8e1,#fffde7)',
+      background: 'linear-gradient(135deg,#fff1b8 0%,#ffe08a 50%,#fff9e0 100%)',
       border: '1.5px solid rgba(240,165,0,.3)',
-      borderRadius: 14, padding: '14px 18px', marginBottom: 20,
+      borderRadius: 24, padding: '18px 22px', marginBottom: 20,
       display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-      boxShadow: '0 4px 16px rgba(240,165,0,.1)',
+      boxShadow: '0 14px 34px rgba(240,165,0,.22), inset 0 1px 0 rgba(255,255,255,.7)',
     }}>
       <div style={{ fontSize: 24 }}>💼</div>
       <div style={{ flex: 1 }}>
@@ -151,8 +151,8 @@ function ComparaisonMois({ current, previous, labelCurrent, labelPrevious }) {
     <div style={{
       background: 'linear-gradient(135deg,rgba(99,102,241,.06),rgba(99,102,241,.02))',
       border: '1.5px solid rgba(99,102,241,.2)',
-      borderRadius: 14, padding: '14px 18px', marginBottom: 20,
-      boxShadow: '0 4px 16px rgba(99,102,241,.08)',
+      borderRadius: 24, padding: '18px 22px', marginBottom: 20,
+      boxShadow: '0 14px 34px rgba(99,102,241,.16)',
     }}>
       <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 12 }}>
         📊 Comparaison {labelCurrent} vs {labelPrevious}
@@ -167,7 +167,7 @@ function ComparaisonMois({ current, previous, labelCurrent, labelPrevious }) {
             <div key={label} style={{
               flex: 1, minWidth: 120,
               background: '#fff',
-              borderRadius: 10, padding: '10px 14px',
+              borderRadius: 16, padding: '12px 16px',
               border: '1.5px solid rgba(99,102,241,.15)',
             }}>
               <div style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600, textTransform: 'uppercase', marginBottom: 6 }}>{label}</div>
@@ -356,12 +356,12 @@ export default function Dashboard({ setPage }) {
   if (lP || lV || lD) return <Spinner />
 
   const tabBtn = (active) => ({
-    padding: '8px 18px', borderRadius: 10, cursor: 'pointer',
+    padding: '9px 20px', borderRadius: 99, cursor: 'pointer',
     fontFamily: 'Lexend,sans-serif', fontSize: 13, fontWeight: 600,
     transition: 'all .18s',
-    background: active ? 'linear-gradient(135deg,var(--em),var(--em2))' : 'var(--bg)',
+    background: active ? 'linear-gradient(135deg,var(--em),var(--em2))' : 'rgba(255,255,255,.75)',
     color: active ? '#fff' : 'var(--text2)',
-    boxShadow: active ? '0 4px 14px var(--em-g)' : 'none',
+    boxShadow: active ? '0 8px 20px rgba(14,165,107,.32)' : 'none',
     border: active ? 'none' : '1.5px solid var(--border)',
   })
 

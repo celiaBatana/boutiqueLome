@@ -114,11 +114,11 @@ export default function Depenses() {
 
       {/* ── Report + Caisse ── */}
       <div style={{
-        background: 'linear-gradient(135deg,#fff8e1,#fffde7)',
+        background: 'linear-gradient(135deg,#fff1b8 0%,#ffe08a 50%,#fff9e0 100%)',
         border: '1.5px solid rgba(240,165,0,.3)',
-        borderRadius: 16, padding: '16px 20px', marginBottom: 18,
+        borderRadius: 24, padding: '20px 24px', marginBottom: 18,
         display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
-        boxShadow: '0 4px 16px rgba(240,165,0,.1)',
+        boxShadow: '0 14px 34px rgba(240,165,0,.22), inset 0 1px 0 rgba(255,255,255,.7)',
       }}>
         <div style={{ fontSize: 28 }}>💼</div>
         <div style={{ flex: 1 }}>

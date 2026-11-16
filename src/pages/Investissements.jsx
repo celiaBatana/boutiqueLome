@@ -56,31 +56,31 @@ export default function Investissements() {
 
       {/* ── Résumé global ── */}
       <div style={{
-        background: 'linear-gradient(135deg,#eff6ff,#dbeafe)',
-        border: '1.5px solid rgba(37,99,235,.2)',
-        borderRadius: 16, padding: '16px 20px', marginBottom: 20,
+        background: 'linear-gradient(135deg,#eceeff 0%,#ddd9ff 55%,#f3f1ff 100%)',
+        border: '1.5px solid rgba(99,102,241,.2)',
+        borderRadius: 24, padding: '20px 24px', marginBottom: 20,
         display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
-        boxShadow: '0 4px 16px rgba(37,99,235,.08)',
+        boxShadow: '0 14px 34px rgba(99,102,241,.22), inset 0 1px 0 rgba(255,255,255,.7)',
       }}>
         <div style={{ fontSize: 28 }}>💡</div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#4338ca', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 8 }}>
             Total investi de votre poche
           </div>
-          <div style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 26, color: '#1e40af' }}>
+          <div style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 26, color: '#4338ca' }}>
             {fmt(totalInvesti)} FCFA
           </div>
         </div>
         <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 10, color: '#1e40af', fontWeight: 600, textTransform: 'uppercase', marginBottom: 4 }}>Remboursé</div>
+            <div style={{ fontSize: 10, color: '#4338ca', fontWeight: 600, textTransform: 'uppercase', marginBottom: 4 }}>Remboursé</div>
             <div style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 18, color: 'var(--em-d)' }}>
               {fmt(totalRembourse)} FCFA
             </div>
           </div>
-          <div style={{ width: 1, background: 'rgba(37,99,235,.2)' }} />
+          <div style={{ width: 1, background: 'rgba(99,102,241,.2)' }} />
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 10, color: '#1e40af', fontWeight: 600, textTransform: 'uppercase', marginBottom: 4 }}>À récupérer</div>
+            <div style={{ fontSize: 10, color: '#4338ca', fontWeight: 600, textTransform: 'uppercase', marginBottom: 4 }}>À récupérer</div>
             <div style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 18, color: resteRecuperer > 0 ? 'var(--coral)' : 'var(--em-d)' }}>
               {fmt(resteRecuperer)} FCFA
             </div>
@@ -131,7 +131,7 @@ export default function Investissements() {
             </select>
           )}
           {liste.length > 0 && (
-            <span style={{ marginLeft: 'auto', fontFamily: 'Nunito,sans-serif', fontSize: 13, fontWeight: 800, color: '#1e40af' }}>
+            <span style={{ marginLeft: 'auto', fontFamily: 'Nunito,sans-serif', fontSize: 13, fontWeight: 800, color: '#4338ca' }}>
               {fmt(totalFiltreInv)} FCFA investi
             </span>
           )}
@@ -164,15 +164,15 @@ export default function Investissements() {
                       <td><strong>{inv.desc}</strong></td>
                       <td>
                         <span style={{
-                          background: 'rgba(37,99,235,.1)', color: '#1e40af',
-                          border: '1px solid rgba(37,99,235,.2)',
+                          background: 'rgba(99,102,241,.1)', color: '#4338ca',
+                          border: '1px solid rgba(99,102,241,.2)',
                           borderRadius: 99, padding: '2px 8px', fontSize: 11, fontWeight: 700
                         }}>
                           {inv.cat}
                         </span>
                       </td>
                       <td>
-                        <span style={{ color: '#1e40af', fontWeight: 700 }}>
+                        <span style={{ color: '#4338ca', fontWeight: 700 }}>
                           {fmt(inv.montant)} FCFA
                         </span>
                       </td>
@@ -207,7 +207,7 @@ export default function Investissements() {
         {liste.length > 0 && (
           <div style={{ marginTop: 14, padding: '10px 14px', background: 'var(--bg)', borderRadius: 10, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12, color: 'var(--text2)' }}>
-              Total investi : <strong style={{ color: '#1e40af' }}>{fmt(totalFiltreInv)} FCFA</strong>
+              Total investi : <strong style={{ color: '#4338ca' }}>{fmt(totalFiltreInv)} FCFA</strong>
             </span>
             <span style={{ fontSize: 12, color: 'var(--text2)' }}>
               Remboursé : <strong style={{ color: 'var(--em-d)' }}>{fmt(totalFiltreRemb)} FCFA</strong>
