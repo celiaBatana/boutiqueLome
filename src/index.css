@@ -439,3 +439,21 @@ select {
 @media (max-width: 380px) {
   .stat-grid { grid-template-columns: 1fr; }
 }
+
+/* ── DIALOGUES (remplacent confirm / alert) ── */
+.dialog { max-width: 380px; text-align: center; padding: 30px 26px 24px; }
+.dialog-icon {
+  width: 62px; height: 62px; margin: 0 auto 14px; border-radius: 22px;
+  display: flex; align-items: center; justify-content: center; font-size: 28px;
+  background: linear-gradient(135deg, var(--em-g), var(--gold-g));
+  box-shadow: var(--shadow-sm);
+}
+.dialog-title { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 20px; color: var(--em-dd); margin-bottom: 8px; }
+.dialog-msg { font-size: 14px; color: var(--text2); line-height: 1.5; }
+.dialog-foot { justify-content: center; }
+.dialog-foot .btn { flex: 1; }
+.btn-del-solid {
+  background: linear-gradient(135deg, #ff4f58, #ff8a70); color: #fff;
+  box-shadow: 0 8px 20px rgba(255,90,95,.32), inset 0 1px 0 rgba(255,255,255,.35);
+}
+.btn-del-solid:hover { transform: translateY(-2px); }

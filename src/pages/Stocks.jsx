@@ -1,3 +1,4 @@
+import { useDialog } from '../components/Dialog'
 import { useState, useMemo } from 'react'
 import { useProduits, useDepenses, useReappros } from '../hooks/useFirebase'
 import { SCard, Spinner, Empty, ProgBar, Field } from '../components/UI'
@@ -38,6 +39,7 @@ function EditableCell({ value, color, isCurrency = false, onSave }) {
 
 // ── Modal Nouveau produit ──
 function ModalAddProduit({ onClose, onSave }) {
+  const { alert } = useDialog()
   const [form, setForm] = useState({ nom: '', cat: 'Boissons', stock: 3, seuil: 1, prix: 0 })
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
   return (
@@ -68,7 +70,7 @@ function ModalAddProduit({ onClose, onSave }) {
           </Field>
         </div>
         <div className="modal-foot">
-          <button className="btn btn-em" onClick={() => { if (!form.nom.trim()) return alert('Entrez un nom.'); onSave(form) }}>
+          <button className="btn btn-em" onClick={async () => { if (!form.nom.trim()) { await alert('Entrez un nom.', { icon: '🏷️' }); return } onSave(form) }}>
             Enregistrer
           </button>
           <button className="btn btn-outline" onClick={onClose}>Annuler</button>
@@ -80,6 +82,7 @@ function ModalAddProduit({ onClose, onSave }) {
 
 // ── Modal Réappro ──
 function ModalReappro({ produits, onClose, onSave }) {
+  const { alert } = useDialog()
   const [pid, setPid]   = useState('')
   const [qty, setQty]   = useState(1)
   const [date, setDate] = useState(today())
@@ -106,8 +109,8 @@ function ModalReappro({ produits, onClose, onSave }) {
           </Field>
         </div>
         <div className="modal-foot">
-          <button className="btn btn-gold" onClick={() => {
-            if (!pid) return alert('Sélectionnez un produit.')
+          <button className="btn btn-gold" onClick={async () => {
+            if (!pid) { await alert('Sélectionnez un produit.', { icon: '📦' }); return }
             onSave({ pid, qty: Number(qty), date })
           }}>✔ Confirmer</button>
           <button className="btn btn-outline" onClick={onClose}>Annuler</button>
@@ -119,6 +122,7 @@ function ModalReappro({ produits, onClose, onSave }) {
 
 // ── Historique réappros paginé ──
 function HistoriqueReappros({ reappros, produits, deleteReappro }) {
+  const { confirm } = useDialog()
   const [filterProd, setFilterProd] = useState('tous')
   const [page, setPage]             = useState(1)
 
@@ -185,7 +189,7 @@ function HistoriqueReappros({ reappros, produits, deleteReappro }) {
                   </td>
                   <td>
                     <button className="btn btn-del btn-xs"
-                      onClick={() => { if (!confirm('Supprimer ce réappro ? Le stock ne sera pas modifié.')) return; deleteReappro(r.id) }}>
+                      onClick={async () => { if (!(await confirm('Supprimer ce réappro ? Le stock ne sera pas modifié.', { title: 'Supprimer le réappro' }))) return; deleteReappro(r.id) }}>
                       ✕
                     </button>
                   </td>
@@ -217,6 +221,7 @@ function HistoriqueReappros({ reappros, produits, deleteReappro }) {
 
 // ── Page principale ──
 export default function Stocks() {
+  const { confirm } = useDialog()
   const { produits, loading, addProduit, updateProduit, deleteProduit } = useProduits()
   const { reappros, addReappro, deleteReappro } = useReappros()
   const [showAdd, setShowAdd]         = useState(false)
@@ -333,7 +338,7 @@ export default function Stocks() {
                         <td>{badge}</td>
                         <td>
                           <button className="btn btn-del btn-xs"
-                            onClick={() => confirm('Supprimer ce produit ?') && deleteProduit(p.id)}>✕</button>
+                            onClick={async () => (await confirm('Supprimer ce produit ?', { title: 'Supprimer le produit' })) && deleteProduit(p.id)}>✕</button>
                         </td>
                       </tr>
                     ]

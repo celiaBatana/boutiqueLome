@@ -1,9 +1,11 @@
+import { useDialog } from '../components/Dialog'
 import { useState, useMemo } from 'react'
 import { useDepenses, useCaisse, useVentes } from '../hooks/useFirebase'
 import { StatCard, SCard, Spinner, Empty, Field } from '../components/UI'
 import { fmt, today, currentMonth, monthKey, fmtMonth, CAT_DEPENSES } from '../lib/utils'
 
 export default function Depenses() {
+  const { confirm, alert } = useDialog()
   const { depenses, loading, addDepense, deleteDepense } = useDepenses()
   const { ventes } = useVentes()
   const { getReport, setReport } = useCaisse()
@@ -59,7 +61,7 @@ export default function Depenses() {
   const totalFiltre = depFiltrees.reduce((a, d) => a + (d.montant || 0), 0)
 
   const handleAdd = async () => {
-    if (!desc.trim() || !mont) return alert('Remplissez la description et le montant.')
+    if (!desc.trim() || !mont) { await alert('Remplissez la description et le montant.', { icon: '💸' }); return }
     setSaving(true)
     await addDepense({ date, desc, cat, montant: Number(mont) })
     setDesc(''); setMont('')
@@ -263,7 +265,7 @@ export default function Depenses() {
                       <td><span style={{ color: isFuture ? 'var(--sky)' : 'var(--coral)', fontWeight: 700 }}>{fmt(d.montant)} FCFA</span></td>
                       <td>
                         <button className="btn btn-del btn-xs"
-                          onClick={() => confirm('Supprimer ?') && deleteDepense(d.id)}>
+                          onClick={async () => (await confirm('Supprimer cette dépense ?', { title: 'Supprimer la dépense' })) && deleteDepense(d.id)}>
                           ✕
                         </button>
                       </td>

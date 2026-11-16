@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useProduits, useVentes, useNotes } from '../hooks/useFirebase'
+import { useDialog } from '../components/Dialog'
 import { SCard, Spinner, Empty, Field } from '../components/UI'
 import { fmt, today, nowTime, currentMonth, monthKey, fmtMonth } from '../lib/utils'
 
@@ -7,6 +8,7 @@ const isCredit = (p) => p?.cat === 'Crédit téléphonique'
 
 // ── Note du jour éditable ──
 function NoteJour({ date, notes, setNote, deleteNote }) {
+  const { confirm } = useDialog()
   const [editing, setEditing]   = useState(false)
   const [val, setVal]           = useState('')
   const note = notes[date] || ''
@@ -46,7 +48,7 @@ function NoteJour({ date, notes, setNote, deleteNote }) {
             title="Modifier la note"
           >✏️</button>
           <button
-            onClick={async () => { if (confirm('Supprimer cette note ?')) await deleteNote(date) }}
+            onClick={async () => { if (await confirm('Supprimer cette note ?', { title: 'Supprimer la note' })) await deleteNote(date) }}
             style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--coral)', padding: '2px 4px' }}
             title="Supprimer la note"
           >✕</button>
@@ -64,6 +66,7 @@ function NoteJour({ date, notes, setNote, deleteNote }) {
 }
 
 export default function Ventes() {
+  const { confirm, alert } = useDialog()
   const { produits } = useProduits()
   const { ventes, loading, addVente, deleteVente } = useVentes()
   const { notes, setNote, deleteNote } = useNotes()
@@ -122,36 +125,36 @@ export default function Ventes() {
 
   const handleAdd = async () => {
     const p = produits.find(x => x.id === pid)
-    if (!p) return alert('Sélectionnez un produit.')
+    if (!p) { await alert('Sélectionnez un produit.', { icon: '🛍️' }); return }
     const { db, COLLECTIONS } = await import('../lib/firebase')
     const { doc, updateDoc } = await import('firebase/firestore')
     setSaving(true)
     try {
       if (isCredit(p)) {
         const mont = Number(montant)
-        if (!mont || mont <= 0) return alert('Entrez un montant valide.')
-        if (mont > p.stock) return alert(`Solde insuffisant ! Solde : ${fmt(p.stock)} FCFA`)
+        if (!mont || mont <= 0) { await alert('Entrez un montant valide.'); return }
+        if (mont > p.stock) { await alert(`Solde insuffisant ! Solde : ${fmt(p.stock)} FCFA`, { title: 'Solde insuffisant', icon: '📱' }); return }
         await updateDoc(doc(db, COLLECTIONS.PRODUITS, pid), { stock: p.stock - mont })
         await addVente({ date: selectedDate, heure: nowTime(), prodId: pid, prodNom: p.nom, prodCat: p.cat, qty: mont, prix: 1, total: mont, typeCredit: true })
         setMontant('')
       } else {
-        if (qty > p.stock) return alert('Stock insuffisant ! Restant : ' + p.stock)
+        if (qty > p.stock) { await alert('Stock insuffisant ! Restant : ' + p.stock, { title: 'Stock insuffisant', icon: '📦' }); return }
         await updateDoc(doc(db, COLLECTIONS.PRODUITS, pid), { stock: p.stock - qty })
         await addVente({ date: selectedDate, heure: nowTime(), prodId: pid, prodNom: p.nom, prodCat: p.cat, qty: Number(qty), prix: Number(prix), total: Number(qty) * Number(prix), typeCredit: false })
         setQty(1); setPrix('')
       }
       setPid(''); setProdSearch('')
-    } catch (e) { alert('Erreur : ' + e.message) }
-    setSaving(false)
+    } catch (e) { await alert('Erreur : ' + e.message, { title: 'Erreur', icon: '⚠️' }) }
+    finally { setSaving(false) }
   }
 
   const handleDelete = async (v) => {
-    if (!confirm('Supprimer cette vente ?')) return
+    if (!(await confirm('Supprimer cette vente ? Le stock sera remis.', { title: 'Supprimer la vente' }))) return
     const { db, COLLECTIONS } = await import('../lib/firebase')
     const { doc, updateDoc, getDoc } = await import('firebase/firestore')
-    const ref = doc(db, COLLECTIONS.PRODUITS, v.prodId)
-    const snap = await getDoc(ref)
-    if (snap.exists()) await updateDoc(ref, { stock: (snap.data().stock || 0) + (v.typeCredit ? v.total : v.qty) })
+    const ref = v.prodId ? doc(db, COLLECTIONS.PRODUITS, v.prodId) : null
+    const snap = ref ? await getDoc(ref) : null
+    if (snap?.exists()) await updateDoc(ref, { stock: (snap.data().stock || 0) + (v.typeCredit ? v.total : v.qty) })
     await deleteVente(v.id)
   }
 

@@ -1,3 +1,4 @@
+import { useDialog } from '../components/Dialog'
 import { useState, useMemo } from 'react'
 import { useVentes, useDepenses, useProduits } from '../hooks/useFirebase'
 import { StatCard, SCard, Spinner, Empty } from '../components/UI'
@@ -18,6 +19,7 @@ function exportCSV(filename, headers, rows) {
 }
 
 export default function Historique() {
+  const { confirm } = useDialog()
   const { ventes, loading: lV, deleteVente } = useVentes()
   const { depenses, loading: lD } = useDepenses()
   const { produits } = useProduits()
@@ -58,12 +60,12 @@ export default function Historique() {
   }, [ventes, depenses, mois, search])
 
   const handleDelete = async (v) => {
-    if (!confirm(`Supprimer la vente "${v.prodNom}" du ${v.date} ?`)) return
+    if (!(await confirm(`Supprimer la vente "${v.prodNom}" du ${v.date} ? Le stock sera remis.`, { title: 'Supprimer la vente' }))) return
     const { db, COLLECTIONS } = await import('../lib/firebase')
     const { doc, updateDoc, getDoc } = await import('firebase/firestore')
-    const ref = doc(db, COLLECTIONS.PRODUITS, v.prodId)
-    const snap = await getDoc(ref)
-    if (snap.exists()) {
+    const ref = v.prodId ? doc(db, COLLECTIONS.PRODUITS, v.prodId) : null
+    const snap = ref ? await getDoc(ref) : null
+    if (snap?.exists()) {
       await updateDoc(ref, { stock: (snap.data().stock || 0) + (v.typeCredit ? v.total : v.qty) })
     }
     await deleteVente(v.id)

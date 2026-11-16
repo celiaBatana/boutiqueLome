@@ -1,3 +1,4 @@
+import { useDialog } from '../components/Dialog'
 import { useState } from 'react'
 import { useInvestissements } from '../hooks/useFirebase'
 import { SCard, Spinner, Empty, Field } from '../components/UI'
@@ -8,6 +9,7 @@ const CAT_INV = [
 ]
 
 export default function Investissements() {
+  const { confirm, alert } = useDialog()
   const { investissements, loading, addInvestissement, updateRembourse, deleteInvestissement } = useInvestissements()
 
   const [desc, setDesc]     = useState('')
@@ -39,7 +41,7 @@ export default function Investissements() {
   const totalFiltreRemb = liste.reduce((a, i) => a + (i.rembourse || 0), 0)
 
   const handleAdd = async () => {
-    if (!desc.trim() || !mont) return alert('Remplissez la description et le montant.')
+    if (!desc.trim() || !mont) { await alert('Remplissez la description et le montant.', { icon: '💡' }); return }
     setSaving(true)
     await addInvestissement({ date, desc, cat, montant: Number(mont) })
     setDesc(''); setMont('')
@@ -191,7 +193,7 @@ export default function Investissements() {
                       </td>
                       <td>
                         <button className="btn btn-del btn-xs"
-                          onClick={() => confirm('Supprimer cet investissement ?') && deleteInvestissement(inv.id)}>
+                          onClick={async () => (await confirm('Supprimer cet investissement ?', { title: 'Supprimer' })) && deleteInvestissement(inv.id)}>
                           ✕
                         </button>
                       </td>
