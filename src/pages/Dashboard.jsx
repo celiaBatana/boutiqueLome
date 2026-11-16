@@ -78,7 +78,7 @@ function Heatmap({ days, top4, maxDay }) {
 }
 
 // ── ReportBlock ──
-function ReportBlock({ m, getReport, setReport, caisse }) {
+function ReportBlock({ m, getReport, setReport, resetReport, isAuto, caisse }) {
   const [editing, setEditing] = useState(false)
   const [val, setVal]         = useState('')
   const rep = getReport(m)
@@ -113,7 +113,10 @@ function ReportBlock({ m, getReport, setReport, caisse }) {
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 20, color: rep > 0 ? '#8a5c00' : 'var(--text3)' }}>
-              {rep > 0 ? fmt(rep) + ' FCFA' : 'Non défini'}
+              {fmt(rep)} FCFA
+            </span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#8a5c00', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(240,165,0,.3)', borderRadius: 99, padding: '2px 9px' }}>
+              {isAuto(m) ? '⚙️ auto · caisse du mois précédent' : '✍️ saisi à la main'}
             </span>
             <button
               onClick={() => { setVal(rep); setEditing(true) }}
@@ -121,10 +124,19 @@ function ReportBlock({ m, getReport, setReport, caisse }) {
             >
               ✏️ Modifier
             </button>
+            {!isAuto(m) && (
+              <button
+                onClick={() => resetReport(m)}
+                title="Revenir à la caisse du mois précédent"
+                style={{ background: 'rgba(255,255,255,.6)', color: '#8a5c00', border: '1px solid rgba(240,165,0,.3)', borderRadius: 7, padding: '4px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+              >
+                ↺ Auto
+              </button>
+            )}
           </div>
         )}
       </div>
-      {rep > 0 && (
+      {true && (
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: 10, color: '#8a5c00', fontWeight: 600, textTransform: 'uppercase', marginBottom: 2 }}>Caisse totale</div>
           <div style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 20, color: caisse >= 0 ? 'var(--em-d)' : 'var(--coral)' }}>
@@ -282,7 +294,7 @@ export default function Dashboard({ setPage }) {
   const { produits, loading: lP } = useProduits()
   const { ventes,   loading: lV } = useVentes()
   const { depenses, loading: lD } = useDepenses()
-  const { getReport, setReport }  = useCaisse()
+  const { getReport, setReport, resetReport, isAuto } = useCaisse(ventes, depenses)
   const { marges }                = useMarges()
 
   const t = today()
@@ -469,7 +481,7 @@ export default function Dashboard({ setPage }) {
       {/* ══ ONGLET AUJOURD'HUI ══ */}
       {onglet === 'today' && (
         <>
-          <ReportBlock m={currentMonth()} getReport={getReport} setReport={setReport} caisse={stats.caisse} />
+          <ReportBlock m={currentMonth()} getReport={getReport} setReport={setReport} resetReport={resetReport} isAuto={isAuto} caisse={stats.caisse} />
 
           <ComparaisonMois
             current={{ tvM: stats.tvM, tdM: stats.tdM, benEstime: stats.benEstime }}
@@ -531,7 +543,7 @@ export default function Dashboard({ setPage }) {
       {/* ══ ONGLET PAR MOIS ══ */}
       {onglet === 'mois' && (
         <>
-          <ReportBlock m={moisSel} getReport={getReport} setReport={setReport} caisse={stats.caisse} />
+          <ReportBlock m={moisSel} getReport={getReport} setReport={setReport} resetReport={resetReport} isAuto={isAuto} caisse={stats.caisse} />
 
           <ComparaisonMois
             current={{ tvM: stats.tvM, tdM: stats.tdM, benEstime: stats.benEstime }}

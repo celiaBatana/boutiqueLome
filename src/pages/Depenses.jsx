@@ -8,7 +8,7 @@ export default function Depenses() {
   const { confirm, alert } = useDialog()
   const { depenses, loading, addDepense, deleteDepense } = useDepenses()
   const { ventes } = useVentes()
-  const { getReport, setReport } = useCaisse()
+  const { getReport, setReport, resetReport, isAuto } = useCaisse(ventes, depenses)
 
   const [desc, setDesc]             = useState('')
   const [mont, setMont]             = useState('')
@@ -141,7 +141,10 @@ export default function Depenses() {
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 22, color: report > 0 ? '#8a5c00' : 'var(--text3)' }}>
-                {report > 0 ? fmt(report) + ' FCFA' : 'Non défini'}
+                {fmt(report)} FCFA
+              </span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#8a5c00', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(240,165,0,.3)', borderRadius: 99, padding: '2px 9px' }}>
+                {isAuto(m) ? '⚙️ auto · caisse du mois précédent' : '✍️ saisi à la main'}
               </span>
               <button
                 className="btn btn-sm"
@@ -150,6 +153,16 @@ export default function Depenses() {
               >
                 ✏️ Modifier
               </button>
+              {!isAuto(m) && (
+                <button
+                  className="btn btn-sm"
+                  onClick={() => resetReport(m)}
+                  title="Revenir à la caisse du mois précédent"
+                  style={{ background: 'rgba(255,255,255,.6)', color: '#8a5c00', border: '1px solid rgba(240,165,0,.3)', fontSize: 11 }}
+                >
+                  ↺ Auto
+                </button>
+              )}
             </div>
           )}
         </div>

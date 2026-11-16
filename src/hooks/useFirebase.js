@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   collection, onSnapshot, addDoc, updateDoc,
   deleteDoc, doc, serverTimestamp, query, orderBy
@@ -173,7 +173,9 @@ export function useVentes() {
   return { ventes: data, loading, addVente, deleteVente }
 }
 // ── Caisse / Report mensuel ──
-export function useCaisse() {
+// Report = valeur saisie à la main si elle existe, sinon caisse du mois précédent
+// (report précédent + revenus − dépenses), calculée automatiquement.
+export function useCaisse(ventes = [], depenses = []) {
   const [reports, setReports] = useState({})
   const [loading, setLoading] = useState(true)
 
@@ -192,9 +194,40 @@ export function useCaisse() {
     await setDoc(doc(db, COLLECTIONS.CAISSE, mois), { report: Number(montant) || 0 })
   }
 
-  const getReport = (mois) => reports[mois] || 0
+  const resetReport = async (mois) => {
+    await deleteDoc(doc(db, COLLECTIONS.CAISSE, mois))
+  }
 
-  return { reports, loading, setReport, getReport }
+  const { getReport, isAuto } = useMemo(() => {
+    const sums = {}
+    const add = (date, key, val) => {
+      const k = (date || '').slice(0, 7)
+      if (!k) return
+      if (!sums[k]) sums[k] = { rev: 0, dep: 0 }
+      sums[k][key] += val || 0
+    }
+    ventes.forEach(v => add(v.date, 'rev', v.total))
+    depenses.forEach(d => add(d.date, 'dep', d.montant))
+
+    const first = [...Object.keys(sums), ...Object.keys(reports)].sort()[0]
+    const prevOf = (m) => {
+      const [y, mo] = m.split('-').map(Number)
+      const d = new Date(y, mo - 2, 1)
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    }
+    const memo = {}
+    const effective = (m) => {
+      if (m in reports) return reports[m]
+      if (!first || m <= first) return 0
+      if (memo[m] !== undefined) return memo[m]
+      const p = prevOf(m)
+      const s = sums[p] || { rev: 0, dep: 0 }
+      return (memo[m] = effective(p) + s.rev - s.dep)
+    }
+    return { getReport: effective, isAuto: (m) => !(m in reports) }
+  }, [reports, ventes, depenses])
+
+  return { reports, loading, setReport, resetReport, getReport, isAuto }
 }
 
 // ── Dépenses ──
