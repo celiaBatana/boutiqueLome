@@ -127,19 +127,19 @@ export default function Ventes() {
     const p = produits.find(x => x.id === pid)
     if (!p) { await alert('Sélectionnez un produit.', { icon: '🛍️' }); return }
     const { db, COLLECTIONS } = await import('../lib/firebase')
-    const { doc, updateDoc } = await import('firebase/firestore')
+    const { doc, updateDoc, increment } = await import('firebase/firestore')
     setSaving(true)
     try {
       if (isCredit(p)) {
         const mont = Number(montant)
         if (!mont || mont <= 0) { await alert('Entrez un montant valide.'); return }
         if (mont > p.stock) { await alert(`Solde insuffisant ! Solde : ${fmt(p.stock)} FCFA`, { title: 'Solde insuffisant', icon: '📱' }); return }
-        await updateDoc(doc(db, COLLECTIONS.PRODUITS, pid), { stock: p.stock - mont })
+        await updateDoc(doc(db, COLLECTIONS.PRODUITS, pid), { stock: increment(-mont) })
         await addVente({ date: selectedDate, heure: nowTime(), prodId: pid, prodNom: p.nom, prodCat: p.cat, qty: mont, prix: 1, total: mont, typeCredit: true })
         setMontant('')
       } else {
         if (qty > p.stock) { await alert('Stock insuffisant ! Restant : ' + p.stock, { title: 'Stock insuffisant', icon: '📦' }); return }
-        await updateDoc(doc(db, COLLECTIONS.PRODUITS, pid), { stock: p.stock - qty })
+        await updateDoc(doc(db, COLLECTIONS.PRODUITS, pid), { stock: increment(-Number(qty)) })
         await addVente({ date: selectedDate, heure: nowTime(), prodId: pid, prodNom: p.nom, prodCat: p.cat, qty: Number(qty), prix: Number(prix), total: Number(qty) * Number(prix), typeCredit: false })
         setQty(1); setPrix('')
       }
@@ -151,10 +151,10 @@ export default function Ventes() {
   const handleDelete = async (v) => {
     if (!(await confirm('Supprimer cette vente ? Le stock sera remis.', { title: 'Supprimer la vente' }))) return
     const { db, COLLECTIONS } = await import('../lib/firebase')
-    const { doc, updateDoc, getDoc } = await import('firebase/firestore')
+    const { doc, updateDoc, getDoc, increment } = await import('firebase/firestore')
     const ref = v.prodId ? doc(db, COLLECTIONS.PRODUITS, v.prodId) : null
     const snap = ref ? await getDoc(ref) : null
-    if (snap?.exists()) await updateDoc(ref, { stock: (snap.data().stock || 0) + (v.typeCredit ? v.total : v.qty) })
+    if (snap?.exists()) await updateDoc(ref, { stock: increment(v.typeCredit ? v.total : v.qty) })
     await deleteVente(v.id)
   }
 

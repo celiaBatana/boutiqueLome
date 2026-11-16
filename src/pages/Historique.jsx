@@ -62,11 +62,11 @@ export default function Historique() {
   const handleDelete = async (v) => {
     if (!(await confirm(`Supprimer la vente "${v.prodNom}" du ${v.date} ? Le stock sera remis.`, { title: 'Supprimer la vente' }))) return
     const { db, COLLECTIONS } = await import('../lib/firebase')
-    const { doc, updateDoc, getDoc } = await import('firebase/firestore')
+    const { doc, updateDoc, getDoc, increment } = await import('firebase/firestore')
     const ref = v.prodId ? doc(db, COLLECTIONS.PRODUITS, v.prodId) : null
     const snap = ref ? await getDoc(ref) : null
     if (snap?.exists()) {
-      await updateDoc(ref, { stock: (snap.data().stock || 0) + (v.typeCredit ? v.total : v.qty) })
+      await updateDoc(ref, { stock: increment(v.typeCredit ? v.total : v.qty) })
     }
     await deleteVente(v.id)
   }

@@ -234,12 +234,12 @@ export default function Stocks() {
 
   const handleReappro = async ({ pid, qty, date }) => {
     const { db, COLLECTIONS } = await import('../lib/firebase')
-    const { doc, updateDoc, getDoc } = await import('firebase/firestore')
+    const { doc, updateDoc, getDoc, increment } = await import('firebase/firestore')
     const ref = doc(db, COLLECTIONS.PRODUITS, pid)
     const snap = await getDoc(ref)
     if (!snap.exists()) return
     const p = { id: pid, ...snap.data() }
-    await updateDoc(ref, { stock: (p.stock || 0) + qty })
+    await updateDoc(ref, { stock: increment(Number(qty) || 0) })
     await addReappro({ prodId: pid, prodNom: p.nom, prodCat: p.cat, qty, date })
     setShowReappro(false)
   }
