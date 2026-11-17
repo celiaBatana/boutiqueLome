@@ -23,11 +23,25 @@ function Heatmap({ days, top4, maxDay }) {
   return (
     <>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-        {days.map(({ day, total }) => {
+        {days.map(({ day, total, rest, pending }) => {
           const isTop = top4.includes(day)
-          const { bg, text, border } = getColor(total)
+          if (rest || pending) {
+            return (
+              <div key={day} title={rest ? 'Mercredi — jour de repos' : "Aujourd'hui — en cours"} style={{
+                width: 52, borderRadius: 10, padding: '8px 4px', textAlign: 'center',
+                background: rest ? '#e9ece9' : 'var(--bg)',
+                border: rest ? '1.5px dashed #c9cfc9' : '1.5px dashed var(--border)',
+              }}>
+                <div style={{ fontSize: 10, color: '#9aa39b', fontWeight: 600, marginBottom: 4 }}>{day}</div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: '#9aa39b' }}>{rest ? 'Repos' : 'en cours'}</div>
+              </div>
+            )
+          }
+          const { bg, text, border } = total === 0
+            ? { bg: 'rgba(232,69,69,.14)', text: 'var(--coral)', border: 'rgba(232,69,69,.32)' }
+            : getColor(total)
           return (
-            <div key={day} title={total > 0 ? fmt(total) + ' FCFA' : 'Aucune vente'} style={{
+            <div key={day} title={total > 0 ? fmt(total) + ' FCFA' : 'Aucune vente (jour travaillé)'} style={{
               width: 52, borderRadius: 10, background: bg,
               border: isTop ? '2px solid var(--em)' : `1.5px solid ${border}`,
               padding: '8px 4px', textAlign: 'center', transition: 'all .2s',
@@ -35,7 +49,7 @@ function Heatmap({ days, top4, maxDay }) {
             }}>
               <div style={{ fontSize: 10, color: total === 0 ? 'var(--text3)' : text, fontWeight: 600, marginBottom: 4, opacity: .8 }}>{day}</div>
               <div style={{ fontSize: 10, fontWeight: 800, color: text, fontFamily: 'Nunito,sans-serif', lineHeight: 1.2 }}>
-                {total > 0 ? fmt(total) : '—'}
+                {total > 0 ? fmt(total) : '0'}
               </div>
               {isTop && total > 0 && <div style={{ fontSize: 9, marginTop: 3 }}>🏆</div>}
             </div>
@@ -44,9 +58,10 @@ function Heatmap({ days, top4, maxDay }) {
       </div>
       {/* Comptage */}
       {(() => {
-        const actifs = days.filter(d => d.total > 0)
-        const rouges = actifs.filter(d => d.total < 1000).length
+        const actifs = days.filter(d => !d.rest && !d.pending) // jours où elle est censée travailler
+        const rouges = actifs.filter(d => d.total < 1000).length  // inclut les jours à 0
         const oranges = actifs.filter(d => d.total >= 1000 && d.total < 2000).length
+        const repos = days.filter(d => d.rest).length
         const verts = actifs.filter(d => d.total >= 2000).length
         return (
           <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -54,7 +69,7 @@ function Heatmap({ days, top4, maxDay }) {
               <span style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(232,69,69,.08)', border: '1px solid rgba(232,69,69,.2)', borderRadius: 8, padding: '4px 10px' }}>
                 <span style={{ width: 10, height: 10, borderRadius: 2, background: 'rgba(232,69,69,.4)', display: 'inline-block' }} />
                 <span style={{ fontSize: 11, color: 'var(--coral)', fontWeight: 700 }}>{rouges} jour{rouges > 1 ? 's' : ''}</span>
-                <span style={{ fontSize: 10, color: 'var(--text3)' }}>&lt; 1 000 FCFA</span>
+                <span style={{ fontSize: 10, color: 'var(--text3)' }}>&lt; 1 000 FCFA (dont 0)</span>
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(240,165,0,.08)', border: '1px solid rgba(240,165,0,.2)', borderRadius: 8, padding: '4px 10px' }}>
                 <span style={{ width: 10, height: 10, borderRadius: 2, background: 'rgba(240,165,0,.5)', display: 'inline-block' }} />
@@ -68,7 +83,7 @@ function Heatmap({ days, top4, maxDay }) {
               </span>
             </div>
             <div style={{ fontSize: 10, color: 'var(--text3)' }}>
-              🏆 Top 4 jours · {actifs.length} jour{actifs.length > 1 ? 's' : ''} travaillé{actifs.length > 1 ? 's' : ''} ce mois
+              🏆 Top 4 jours · {actifs.length} jour{actifs.length > 1 ? 's' : ''} d'ouverture · {repos} mercredi{repos > 1 ? 's' : ''} de repos (grisé{repos > 1 ? 's' : ''})
             </div>
           </div>
         )
@@ -330,12 +345,21 @@ export default function Dashboard({ setPage }) {
       const day = (v.date || '').slice(8, 10)
       if (day) dayMap[day] = (dayMap[day] || 0) + (v.total || 0)
     })
-    const days = Array.from({ length: 31 }, (_, i) => {
+    const [yy, mm] = m.split('-').map(Number)
+    const nbJours = new Date(yy, mm, 0).getDate()
+    const days = Array.from({ length: nbJours }, (_, i) => {
       const d = String(i + 1).padStart(2, '0')
-      return { day: d, total: dayMap[d] || 0 }
+      const date = `${m}-${d}`
+      const total = dayMap[d] || 0
+      const mercredi = new Date(yy, mm - 1, i + 1).getDay() === 3
+      return {
+        day: d, total,
+        rest: mercredi && total === 0,          // mercredi = jour de repos
+        pending: date === today() && total === 0, // aujourd'hui, pas encore de vente
+      }
     }).filter(d => (m + '-' + d.day) <= today())
     const maxDay = Math.max(...days.map(d => d.total), 1)
-    const top4 = [...days].sort((a, b) => b.total - a.total).slice(0, 4).map(d => d.day)
+    const top4 = [...days].filter(d => d.total > 0).sort((a, b) => b.total - a.total).slice(0, 4).map(d => d.day)
 
     const catStatsMap = {}
     ms.forEach(v => {
