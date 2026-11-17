@@ -8,6 +8,7 @@ const NAV = [
   { id: 'historique', icon: '📅', label: 'Historique',       group: null },
   { id: 'investissements', icon: '💡', label: 'Investissements', group: null },
   { id: 'marges', icon: '💹', label: 'Marges', group: null },
+  { id: 'classement', icon: '🏆', label: 'Classement', group: null },
 ]
 
 export default function Sidebar({ page, setPage, open, onClose }) {
